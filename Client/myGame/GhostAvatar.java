@@ -24,4 +24,6 @@ public class GhostAvatar extends GameObject
 	public UUID getID() { return uuid; }
 	public void setPosition(Vector3f m) { setLocalLocation(m); }
 	public Vector3f getPosition() { return getWorldLocation(); }
+	public void setRotation(Matrix4f m) { setLocalRotation(m); }
+	public Matrix4f getRotation() { return getWorldRotation(); }
 }

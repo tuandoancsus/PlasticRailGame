@@ -66,7 +66,7 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadShapes()
 	{	torS = new Torus(0.5f, 0.2f, 48);
-		ghostS = new Sphere();
+		ghostS = new ImportedModel("dolphinHighPoly.obj");
 		dolS = new ImportedModel("dolphinHighPoly.obj");
 		linxS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
 		linyS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,3f,0f));
@@ -126,10 +126,13 @@ public class MyGame extends VariableFrameRateGame
 
 		// ----------------- INPUTS SECTION -----------------------------
 		im = engine.getInputManager();
+		String gpName = im.getFirstGamepadName();
+
+		setupNetworking();
 
 		// build some action objects for doing things in response to user input
 		FwdAction fwdAction = new FwdAction(this, protClient);
-		TurnAction turnAction = new TurnAction(this);
+		TurnAction turnAction = new TurnAction(this, protClient);
 
 		// attach the action objects to keyboard and gamepad components
 		im.associateActionWithAllGamepads(
@@ -138,8 +141,10 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllGamepads(
 			net.java.games.input.Component.Identifier.Axis.X,
 			turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-
-		setupNetworking();
+		im.associateAction(gpName, net.java.games.input.Component.Identifier.Axis.Y,
+		 	fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		im.associateAction(gpName, net.java.games.input.Component.Identifier.Axis.X,
+		 	turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 	}
 
 	public GameObject getAvatar() { return avatar; }
@@ -199,7 +204,14 @@ public class MyGame extends VariableFrameRateGame
 				fwdDirection.mul(0.05f);
 				Vector3f newPosition = oldPosition.add(fwdDirection.x(), fwdDirection.y(), fwdDirection.z());
 				avatar.setLocalLocation(newPosition);
+				Matrix4f lastSentRotation = new Matrix4f();
+
 				protClient.sendMoveMessage(avatar.getWorldLocation());
+				Matrix4f currentRotation = avatar.getWorldRotation();
+				if (!currentRotation.equals(lastSentRotation)) {
+					protClient.sendTurnMessage(currentRotation);
+					lastSentRotation.set(currentRotation);
+				}
 				break;
 			}
 			case KeyEvent.VK_D:
@@ -209,6 +221,7 @@ public class MyGame extends VariableFrameRateGame
 				Matrix4f newRotation = oldRotation;
 				newRotation.mul(rotAroundAvatarUp);
 				avatar.setLocalRotation(newRotation);
+				protClient.sendTurnMessage(avatar.getWorldRotation());
 				break;
 			}
 		}

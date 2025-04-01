@@ -1,5 +1,8 @@
 package tage;
 import org.joml.*;
+
+import myGame.ProtocolClient;
+
 import java.util.*;
 import tage.shapes.*;
 import tage.physics.PhysicsObject;
@@ -432,43 +435,6 @@ public class GameObject
 		}
 	}
 
-	// --------------- Movement ---------------- 
-	/**
-	 * Moves the object forward or backward based on the given direction.
-	 * The movement is relative to the object's current rotation.
-	 *
-	 * @param direction A float value indicating the direction and magnitude of movement.
-	 *                  Positive values move the object forward, negative values move it backward.
-	 */
-	public void fwdAction(float direction) {
-		Vector4f movementDirection = new Vector4f(0f, 0f, direction, 1f);
-		movementDirection.mul(getWorldRotation()); // Apply world rotation to the movement vector
-		movementDirection.mul(0.1f);            // Scale the movement vector
-		setLocalLocation(getLocalLocation().add(movementDirection.x(), 0, movementDirection.z()));	// Set y to zero to keep movement only on ground.
-	}
-
-	/**
-	 * Rotates the object around its local Y-axis (yaw).
-	 *
-	 * @param angle The angle of rotation in radians. Positive values rotate clockwise,
-	 *              negative values rotate counter-clockwise.
-	 */
-	public void yaw(float angle) {
-		Matrix4f yawMatrix = new Matrix4f().rotation(angle, getLocalUpVector());
-		setLocalRotation(yawMatrix.mul(getLocalRotation()));
-	}
-
-	/**
-	 * Rotates the object around the global Y-axis (yaw).
-	 *
-	 * @param angle The angle of rotation in radians. Positive values rotate clockwise,
-	 *              negative values rotate counter-clockwise.
-	 */
-	public void yawGlobal(float angle) {
-		Matrix4f yawGlobalMatrix = new Matrix4f().rotation(angle, new Vector3f(0,1,0));
-		setLocalRotation(yawGlobalMatrix.mul(getLocalRotation()));
-	}
-
 	/**
 	 * Rotates the object around its local X-axis (pitch).
 	 *
@@ -583,5 +549,42 @@ public class GameObject
 	 */
 	public TextureImage getSafeTexture() {
 		return safe;
+	}
+
+	// --------------- Movement ---------------- 
+	/**
+	 * Moves the object forward or backward based on the given direction.
+	 * The movement is relative to the object's current rotation.
+	 *
+	 * @param direction A float value indicating the direction and magnitude of movement.
+	 *                  Positive values move the object forward, negative values move it backward.
+	 */
+	public void fwdAction(float direction) {
+		Vector4f movementDirection = new Vector4f(0f, 0f, direction, 1f);
+		movementDirection.mul(getWorldRotation()); // Apply world rotation to the movement vector
+		movementDirection.mul(0.1f);            // Scale the movement vector
+		setLocalLocation(getLocalLocation().add(movementDirection.x(), 0, movementDirection.z()));	// Set y to zero to keep movement only on ground.
+	}
+
+	/**
+	 * Rotates the object around its local Y-axis (yaw).
+	 *
+	 * @param angle The angle of rotation in radians. Positive values rotate clockwise,
+	 *              negative values rotate counter-clockwise.
+	 */
+	public void yaw(float angle) {
+		Matrix4f yawMatrix = new Matrix4f().rotation(angle, getLocalUpVector());
+		setLocalRotation(yawMatrix.mul(getLocalRotation()));
+	}
+
+	/**
+	 * Rotates the object around the global Y-axis (yaw).
+	 *
+	 * @param angle The angle of rotation in radians. Positive values rotate clockwise,
+	 *              negative values rotate counter-clockwise.
+	 */
+	public void yawGlobal(float angle) {
+		Matrix4f yawGlobalMatrix = new Matrix4f().rotation(angle, new Vector3f(0,1,0));
+		setLocalRotation(yawGlobalMatrix.mul(getLocalRotation()));
 	}
 }

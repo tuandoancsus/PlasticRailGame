@@ -105,6 +105,22 @@ public class ProtocolClient extends GameConnectionClient
 					Float.parseFloat(messageTokens[4]));
 				
 				ghostManager.updateGhostAvatar(ghostID, ghostPosition);
+	}	
+			// Handle TURN message
+			// Format: (turn,remoteId,x,y,z)
+			if (messageTokens[0].compareTo("turn") == 0)
+			{
+				// move a ghost avatar
+				// Parse out the id into a UUID
+				UUID ghostID = UUID.fromString(messageTokens[1]);
+				
+				// Convert Euler angles to a rotation matrix
+				Matrix4f rotation = new Matrix4f()
+				.rotateX(Float.parseFloat(messageTokens[2]))
+				.rotateY(Float.parseFloat(messageTokens[3]))
+				.rotateZ(Float.parseFloat(messageTokens[4]));
+		
+			ghostManager.updateGhostRotation(ghostID, rotation);
 	}	}	}
 	
 	// The initial message from the game client requesting to join the 
@@ -129,7 +145,7 @@ public class ProtocolClient extends GameConnectionClient
 		{	e.printStackTrace();
 	}	}
 	
-	// Informs the server of the client’s Avatar’s position. The server 
+	// Informs the server of the clientï¿½s Avatarï¿½s position. The server 
 	// takes this message and forwards it to all other clients registered 
 	// with the server.
 	// Message Format: (create,localId,x,y,z) where x, y, and z represent the position
@@ -175,6 +191,27 @@ public class ProtocolClient extends GameConnectionClient
 			message += "," + position.z();
 			
 			sendPacket(message);
+		} catch (IOException e) 
+		{	e.printStackTrace();
+	}	}
+
+	// Informs the server that the local avatar has changed rotation.  
+	// Message Format: (turn,localId,x,y,z) where x, y, and z represent the position.
+
+	public void sendTurnMessage(Matrix4f rotation)
+	{	try 
+		{
+			Matrix4f rotationMatrix = rotation;
+			Quaternionf quat = new Quaternionf();
+			rotationMatrix.getUnnormalizedRotation(quat); // Extract quaternion from matrix
+
+			Vector3f eulerAngles = quat.getEulerAnglesXYZ(new Vector3f());
+			String rotationMessage = new String("turn," + id.toString());
+			rotationMessage += "," + eulerAngles.x;
+			rotationMessage += "," + eulerAngles.y;
+			rotationMessage += "," + eulerAngles.z;
+			
+			sendPacket(rotationMessage);
 		} catch (IOException e) 
 		{	e.printStackTrace();
 	}	}
