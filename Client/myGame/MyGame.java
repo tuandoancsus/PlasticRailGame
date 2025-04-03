@@ -34,10 +34,11 @@ public class MyGame extends VariableFrameRateGame
 	private Matrix4f initialTranslation, initialRotation, initialScale;
 	private double startTime, prevTime, elapsedTime, amt;
 
-	private GameObject tor, avatar, x, y, z;
-	private ObjShape torS, ghostS, dolS, linxS, linyS, linzS;
-	private TextureImage doltx, ghostT;
+	private GameObject avatar, x, y, z, pillBottle;
+	private ObjShape avatarS, ghostS, linxS, linyS, linzS, pillBottleS;
+	private TextureImage avatarT, ghostT, pillT;
 	private Light light;
+	private CameraOrbit3D orbitController;
 
 	private String serverAddress;
 	private int serverPort;
@@ -65,9 +66,10 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadShapes()
-	{	torS = new Torus(0.5f, 0.2f, 48);
+	{
 		ghostS = new ImportedModel("dolphinHighPoly.obj");
-		dolS = new ImportedModel("dolphinHighPoly.obj");
+		avatarS = new ImportedModel("avatar1.obj");
+		pillBottleS = new ImportedModel("PillBottle.obj");
 		linxS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
 		linyS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,3f,0f));
 		linzS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,0f,-3f));
@@ -75,27 +77,35 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadTextures()
-	{	doltx = new TextureImage("Dolphin_HighPolyUV.png");
+	{	avatarT = new TextureImage("avatar1Texture.png");
 		ghostT = new TextureImage("redDolphin.jpg");
+		pillT = new TextureImage("pillbottle.png");
 	}
 
 	@Override
 	public void buildObjects()
 	{	Matrix4f initialTranslation, initialRotation, initialScale;
 
-		// build dolphin avatar
-		avatar = new GameObject(GameObject.root(), dolS, doltx);
-		initialTranslation = (new Matrix4f()).translation(-1f,0f,1f);
+		// build avatar
+		avatar = new GameObject(GameObject.root(), avatarS, avatarT);
+		initialTranslation = (new Matrix4f()).translation(-1f,1,1f);
 		avatar.setLocalTranslation(initialTranslation);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
+		initialScale = (new Matrix4f()).scaling(0.25f);
+		avatar.setLocalScale(initialScale);
 		avatar.setLocalRotation(initialRotation);
+		//avatar.getRenderStates().setModelOrientationCorrection((new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f)));
+
 
 		// build torus along X axis
-		tor = new GameObject(GameObject.root(), torS);
-		initialTranslation = (new Matrix4f()).translation(1,0,0);
-		tor.setLocalTranslation(initialTranslation);
-		initialScale = (new Matrix4f()).scaling(0.25f);
-		tor.setLocalScale(initialScale);
+		pillBottle = new GameObject(GameObject.root(), pillBottleS, pillT);
+		initialTranslation = (new Matrix4f()).translation(10,0,-10);
+		pillBottle.setLocalTranslation(initialTranslation);
+		initialScale = (new Matrix4f()).scaling(5.0f);
+		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(360.0f));
+		pillBottle.setLocalScale(initialScale);
+		pillBottle.setLocalRotation(initialRotation);
+
 
 		// add X,Y,-Z axes
 		x = new GameObject(GameObject.root(), linxS);
@@ -122,11 +132,13 @@ public class MyGame extends VariableFrameRateGame
 		(engine.getRenderSystem()).setWindowDimensions(1900,1000);
 
 		// ----------------- initialize camera ----------------
-		positionCameraBehindAvatar();
+		//positionCameraBehindAvatar();
 
 		// ----------------- INPUTS SECTION -----------------------------
 		im = engine.getInputManager();
 		String gpName = im.getFirstGamepadName();
+		Camera c = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
+		orbitController = new CameraOrbit3D(c, avatar, gpName, engine);
 
 		setupNetworking();
 
@@ -172,26 +184,8 @@ public class MyGame extends VariableFrameRateGame
 
 		// update inputs and camera
 		im.update((float)elapsedTime);
-		positionCameraBehindAvatar();
+		orbitController.updateCameraPosition();
 		processNetworking((float)elapsedTime);
-	}
-
-	private void positionCameraBehindAvatar()
-	{	Vector4f u = new Vector4f(-1f,0f,0f,1f);
-		Vector4f v = new Vector4f(0f,1f,0f,1f);
-		Vector4f n = new Vector4f(0f,0f,1f,1f);
-		u.mul(avatar.getWorldRotation());
-		v.mul(avatar.getWorldRotation());
-		n.mul(avatar.getWorldRotation());
-		Matrix4f w = avatar.getWorldTranslation();
-		Vector3f position = new Vector3f(w.m30(), w.m31(), w.m32());
-		position.add(-n.x()*2f, -n.y()*2f, -n.z()*2f);
-		position.add(v.x()*.75f, v.y()*.75f, v.z()*.75f);
-		Camera c = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
-		c.setLocation(position);
-		c.setU(new Vector3f(u.x(),u.y(),u.z()));
-		c.setV(new Vector3f(v.x(),v.y(),v.z()));
-		c.setN(new Vector3f(n.x(),n.y(),n.z()));
 	}
 
 	@Override
