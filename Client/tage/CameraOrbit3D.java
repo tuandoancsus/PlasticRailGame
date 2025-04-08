@@ -42,6 +42,10 @@ public class CameraOrbit3D {
         im.associateAction(gp, net.java.games.input.Component.Identifier.Key.L, zoomAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
     }
 
+    public void setAvatar(GameObject av) {
+        avatar = av;
+    }
+
     // Compute the camera’s azimuth, elevation, and distance, relative to
     // the target in spherical coordinates, then convert to world Cartesian
     // coordinates and set the camera position from that.
