@@ -35,8 +35,8 @@ public class MyGame extends VariableFrameRateGame
 	private double startTime, prevTime, elapsedTime, amt;
 
 	private GameObject avatar, avatar2, x, y, z, pillBottle, terr;
-	private ObjShape avatarS, ghostS, avatar2S, linxS, linyS, linzS, pillBottleS, terrS;
-	private TextureImage avatarT, ghostT, pillT, hills, grass, floor, avatar2T;
+	private ObjShape avatarS, avatar2S, ghostS, linxS, linyS, linzS, pillBottleS, terrS;
+	private TextureImage avatarT, avatar2T, ghostT, pillT, hills, grass, floor;
 	private int lakeIslands, background; // skyboxes
 	private boolean avatarRendered = false;
 	private Light light;
@@ -272,6 +272,25 @@ public class MyGame extends VariableFrameRateGame
 				{ (engine.getSceneGraph()).setSkyBoxEnabled(false);
 				break;
 				}
+			case KeyEvent.VK_D:
+			{
+				if(!avatarRendered){
+					avatar.getRenderStates().enableRendering();
+					avatarRendered = true;
+					orbitController.setAvatar(avatar);
+				}
+				break;
+			}
+			case KeyEvent.VK_F:
+			{
+				if(!avatarRendered){
+					avatar2.getRenderStates().enableRendering();
+					avatarRendered = true;
+					orbitController.setAvatar(avatar2);
+					avatar = avatar2;
+				}
+				break;
+			}
 			case KeyEvent.VK_D:
 			{
 				if(!avatarRendered){
