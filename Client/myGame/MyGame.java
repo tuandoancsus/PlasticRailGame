@@ -34,9 +34,10 @@ public class MyGame extends VariableFrameRateGame
 	private Matrix4f initialTranslation, initialRotation, initialScale;
 	private double startTime, prevTime, elapsedTime, amt;
 
-	private GameObject avatar, x, y, z, pillBottle;
-	private ObjShape avatarS, ghostS, linxS, linyS, linzS, pillBottleS;
-	private TextureImage avatarT, ghostT, pillT;
+	private GameObject avatar, x, y, z, pillBottle, terr;
+	private ObjShape avatarS, ghostS, linxS, linyS, linzS, pillBottleS,  terrS;
+	private TextureImage avatarT, ghostT, pillT, hills, grass, floor;
+	private int lakeIslands, background; // skyboxes
 	private Light light;
 	private CameraOrbit3D orbitController;
 
@@ -73,6 +74,10 @@ public class MyGame extends VariableFrameRateGame
 		linxS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
 		linyS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,3f,0f));
 		linzS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,0f,-3f));
+
+		terrS = new TerrainPlane(1000); // pixels per axis = 1000x1000
+
+		
 	}
 
 	@Override
@@ -80,8 +85,11 @@ public class MyGame extends VariableFrameRateGame
 	{	avatarT = new TextureImage("avatar1Texture.png");
 		ghostT = new TextureImage("redDolphin.jpg");
 		pillT = new TextureImage("pillbottle.png");
-	}
 
+		hills = new TextureImage("hills.jpg");
+		floor = new TextureImage("floor.jpg");
+		
+	}
 	@Override
 	public void buildObjects()
 	{	Matrix4f initialTranslation, initialRotation, initialScale;
@@ -106,6 +114,16 @@ public class MyGame extends VariableFrameRateGame
 		pillBottle.setLocalScale(initialScale);
 		pillBottle.setLocalRotation(initialRotation);
 
+		// build terrain
+		terr = new GameObject(GameObject.root(), terrS, floor);
+		initialTranslation = (new Matrix4f()).translation(0f,0f,0f);
+		terr.setLocalTranslation(initialTranslation);
+		initialScale = (new Matrix4f()).scaling(20.0f, 1.0f, 20.0f);
+		terr.setLocalScale(initialScale);
+		terr.setHeightMap(hills);
+
+		terr.getRenderStates().setTiling(1);
+		terr.getRenderStates().setTileFactor(10);
 
 		// add X,Y,-Z axes
 		x = new GameObject(GameObject.root(), linxS);
@@ -115,6 +133,14 @@ public class MyGame extends VariableFrameRateGame
 		(y.getRenderStates()).setColor(new Vector3f(0f,1f,0f));
 		(z.getRenderStates()).setColor(new Vector3f(0f,0f,1f));
 	}
+
+	@Override
+	public void loadSkyBoxes()
+	{ 	//fluffyClouds = (engine.getSceneGraph()).loadCubeMap("fluffyClouds");
+		background = (engine.getSceneGraph()).loadCubeMap("background");
+		(engine.getSceneGraph()).setActiveSkyBoxTexture(background);
+		(engine.getSceneGraph()).setSkyBoxEnabled(true);
+		}
 
 	@Override
 	public void initializeLights()
@@ -167,6 +193,10 @@ public class MyGame extends VariableFrameRateGame
 		prevTime = System.currentTimeMillis();
 		amt = elapsedTime * 0.03;
 		Camera c = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
+
+		Vector3f loc = avatar.getWorldLocation();
+		float height = terr.getHeight(loc.x(), loc.z());
+		avatar.setLocalLocation(new Vector3f(loc.x(), height, loc.z()));
 		
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)(System.currentTimeMillis()-startTime)/1000.0f);
@@ -218,6 +248,17 @@ public class MyGame extends VariableFrameRateGame
 				protClient.sendTurnMessage(avatar.getWorldRotation());
 				break;
 			}
+			 
+				
+				case KeyEvent.VK_2:
+				{ (engine.getSceneGraph()).setActiveSkyBoxTexture(background);
+				(engine.getSceneGraph()).setSkyBoxEnabled(true);
+				break;
+				}
+				case KeyEvent.VK_3:
+				{ (engine.getSceneGraph()).setSkyBoxEnabled(false);
+				break;
+				}
 		}
 		super.keyPressed(e);
 	}
