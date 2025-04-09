@@ -1,0 +1,21 @@
+# Java build output
+*.class
+*.jar
+*.war
+*.ear
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# OS junk files
+.DS_Store
+Thumbs.db

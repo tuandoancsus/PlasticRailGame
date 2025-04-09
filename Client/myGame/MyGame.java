@@ -261,34 +261,13 @@ public class MyGame extends VariableFrameRateGame
 				protClient.sendTurnMessage(avatar.getWorldRotation());
 				break;
 			}
-			 
-				
-				case KeyEvent.VK_2:
-				{ (engine.getSceneGraph()).setActiveSkyBoxTexture(background);
+			case KeyEvent.VK_2:
+			{ 	(engine.getSceneGraph()).setActiveSkyBoxTexture(background);
 				(engine.getSceneGraph()).setSkyBoxEnabled(true);
 				break;
 				}
 				case KeyEvent.VK_3:
 				{ (engine.getSceneGraph()).setSkyBoxEnabled(false);
-				break;
-				}
-			case KeyEvent.VK_D:
-			{
-				if(!avatarRendered){
-					avatar.getRenderStates().enableRendering();
-					avatarRendered = true;
-					orbitController.setAvatar(avatar);
-				}
-				break;
-			}
-			case KeyEvent.VK_F:
-			{
-				if(!avatarRendered){
-					avatar2.getRenderStates().enableRendering();
-					avatarRendered = true;
-					orbitController.setAvatar(avatar2);
-					avatar = avatar2;
-				}
 				break;
 			}
 			case KeyEvent.VK_D:
