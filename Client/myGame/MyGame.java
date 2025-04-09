@@ -34,10 +34,11 @@ public class MyGame extends VariableFrameRateGame
 	private Matrix4f initialTranslation, initialRotation, initialScale;
 	private double startTime, prevTime, elapsedTime, amt;
 
-	private GameObject avatar, x, y, z, pillBottle, terr;
-	private ObjShape avatarS, ghostS, linxS, linyS, linzS, pillBottleS,  terrS;
-	private TextureImage avatarT, ghostT, pillT, hills, grass, floor;
+	private GameObject avatar, avatar2, x, y, z, pillBottle, terr;
+	private ObjShape avatarS, avatar2S, ghostS, linxS, linyS, linzS, pillBottleS, terrS;
+	private TextureImage avatarT, avatar2T, ghostT, pillT, hills, grass, floor;
 	private int lakeIslands, background; // skyboxes
+	private boolean avatarRendered = false;
 	private Light light;
 	private CameraOrbit3D orbitController;
 
@@ -70,6 +71,7 @@ public class MyGame extends VariableFrameRateGame
 	{
 		ghostS = new ImportedModel("dolphinHighPoly.obj");
 		avatarS = new ImportedModel("avatar1.obj");
+		avatar2S = new ImportedModel("finalModel.obj");
 		pillBottleS = new ImportedModel("PillBottle.obj");
 		linxS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
 		linyS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,3f,0f));
@@ -83,6 +85,7 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadTextures()
 	{	avatarT = new TextureImage("avatar1Texture.png");
+		avatar2T = new TextureImage("davidbase.png");
 		ghostT = new TextureImage("redDolphin.jpg");
 		pillT = new TextureImage("pillbottle.png");
 
@@ -96,16 +99,26 @@ public class MyGame extends VariableFrameRateGame
 
 		// build avatar
 		avatar = new GameObject(GameObject.root(), avatarS, avatarT);
-		initialTranslation = (new Matrix4f()).translation(-1f,1,1f);
+		initialTranslation = (new Matrix4f()).translation(-1f,2,1f);
 		avatar.setLocalTranslation(initialTranslation);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
 		initialScale = (new Matrix4f()).scaling(0.25f);
 		avatar.setLocalScale(initialScale);
 		avatar.setLocalRotation(initialRotation);
+		avatar.getRenderStates().disableRendering();
 		//avatar.getRenderStates().setModelOrientationCorrection((new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f)));
 
+		avatar2 = new GameObject(GameObject.root(), avatar2S, avatar2T);
+		initialTranslation = (new Matrix4f()).translation(-1f,2,1f);
+		avatar2.setLocalTranslation(initialTranslation);
+		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
+		initialScale = (new Matrix4f()).scaling(0.25f);
+		avatar2.setLocalScale(initialScale);
+		avatar2.setLocalRotation(initialRotation);
+		avatar2.getRenderStates().disableRendering();
 
-		// build torus along X axis
+
+		// build Pill Bottle building
 		pillBottle = new GameObject(GameObject.root(), pillBottleS, pillT);
 		initialTranslation = (new Matrix4f()).translation(10,0,-10);
 		pillBottle.setLocalTranslation(initialTranslation);
@@ -238,7 +251,7 @@ public class MyGame extends VariableFrameRateGame
 				}
 				break;
 			}
-			case KeyEvent.VK_D:
+			case KeyEvent.VK_1:
 			{	Matrix4f oldRotation = new Matrix4f(avatar.getWorldRotation());
 				Vector4f oldUp = new Vector4f(0f,1f,0f,1f).mul(oldRotation);
 				Matrix4f rotAroundAvatarUp = new Matrix4f().rotation(-.01f, new Vector3f(oldUp.x(), oldUp.y(), oldUp.z()));
@@ -248,17 +261,34 @@ public class MyGame extends VariableFrameRateGame
 				protClient.sendTurnMessage(avatar.getWorldRotation());
 				break;
 			}
-			 
-				
-				case KeyEvent.VK_2:
-				{ (engine.getSceneGraph()).setActiveSkyBoxTexture(background);
+			case KeyEvent.VK_2:
+			{ 	(engine.getSceneGraph()).setActiveSkyBoxTexture(background);
 				(engine.getSceneGraph()).setSkyBoxEnabled(true);
 				break;
 				}
 				case KeyEvent.VK_3:
 				{ (engine.getSceneGraph()).setSkyBoxEnabled(false);
 				break;
+			}
+			case KeyEvent.VK_D:
+			{
+				if(!avatarRendered){
+					avatar.getRenderStates().enableRendering();
+					avatarRendered = true;
+					orbitController.setAvatar(avatar);
 				}
+				break;
+			}
+			case KeyEvent.VK_F:
+			{
+				if(!avatarRendered){
+					avatar2.getRenderStates().enableRendering();
+					avatarRendered = true;
+					orbitController.setAvatar(avatar2);
+					avatar = avatar2;
+				}
+				break;
+			}
 		}
 		super.keyPressed(e);
 	}
