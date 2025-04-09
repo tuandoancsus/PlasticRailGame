@@ -99,7 +99,7 @@ public class MyGame extends VariableFrameRateGame
 
 		// build avatar
 		avatar = new GameObject(GameObject.root(), avatarS, avatarT);
-		initialTranslation = (new Matrix4f()).translation(-1f,1,1f);
+		initialTranslation = (new Matrix4f()).translation(-1f,2,1f);
 		avatar.setLocalTranslation(initialTranslation);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
 		initialScale = (new Matrix4f()).scaling(0.25f);
@@ -109,7 +109,7 @@ public class MyGame extends VariableFrameRateGame
 		//avatar.getRenderStates().setModelOrientationCorrection((new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f)));
 
 		avatar2 = new GameObject(GameObject.root(), avatar2S, avatar2T);
-		initialTranslation = (new Matrix4f()).translation(-1f,1,1f);
+		initialTranslation = (new Matrix4f()).translation(-1f,2,1f);
 		avatar2.setLocalTranslation(initialTranslation);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
 		initialScale = (new Matrix4f()).scaling(0.25f);
