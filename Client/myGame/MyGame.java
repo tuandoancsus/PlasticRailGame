@@ -35,7 +35,8 @@ public class MyGame extends VariableFrameRateGame
 	private double startTime, prevTime, elapsedTime, amt;
 
 	private GameObject avatar, avatar2, x, y, z, pillBottle, terr;
-	private ObjShape avatarS, avatar2S, ghostS, linxS, linyS, linzS, pillBottleS, terrS;
+	private AnimatedShape avatarS;
+	private ObjShape avatar2S, ghostS, linxS, linyS, linzS, pillBottleS, terrS;
 	private TextureImage avatarT, avatar2T, ghostT, pillT, hills, grass, floor;
 	private int lakeIslands, background; // skyboxes
 	private boolean avatarRendered = false;
@@ -70,7 +71,13 @@ public class MyGame extends VariableFrameRateGame
 	public void loadShapes()
 	{
 		ghostS = new ImportedModel("dolphinHighPoly.obj");
-		avatarS = new ImportedModel("avatar1.obj");
+		//avatarS = new ImportedModel("avatar1.obj");
+		avatarS = new AnimatedShape("model.rkm", "model.rks");
+		avatarS.loadAnimation("WALK","walkModel.rka");
+		avatarS.loadAnimation("IDLE","idle.rka");
+		avatarS.loadAnimation("RUN","sprint.rka");
+		avatarS.loadAnimation("JUMP","jump3.rka");
+
 		avatar2S = new ImportedModel("finalModel.obj");
 		pillBottleS = new ImportedModel("PillBottle.obj");
 		linxS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
@@ -84,7 +91,7 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadTextures()
-	{	avatarT = new TextureImage("avatar1Texture.png");
+	{	avatarT = new TextureImage("spiderman.png");
 		avatar2T = new TextureImage("davidbase.png");
 		ghostT = new TextureImage("redDolphin.jpg");
 		pillT = new TextureImage("pillbottle.png");
@@ -105,6 +112,8 @@ public class MyGame extends VariableFrameRateGame
 		initialScale = (new Matrix4f()).scaling(0.25f);
 		avatar.setLocalScale(initialScale);
 		avatar.setLocalRotation(initialRotation);
+		avatarS.playAnimation("IDLE", 0.1f, AnimatedShape.EndType.LOOP, 0);
+
 		avatar.getRenderStates().disableRendering();
 		//avatar.getRenderStates().setModelOrientationCorrection((new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f)));
 
@@ -184,8 +193,12 @@ public class MyGame extends VariableFrameRateGame
 		// build some action objects for doing things in response to user input
 		FwdAction fwdAction = new FwdAction(this, protClient);
 		TurnAction turnAction = new TurnAction(this, protClient);
+		JumpAction jumpAction = new JumpAction(this, protClient);
 
 		// attach the action objects to keyboard and gamepad components
+		im.associateActionWithAllGamepads(
+			net.java.games.input.Component.Identifier.Button._0,
+			jumpAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 		im.associateActionWithAllGamepads(
 			net.java.games.input.Component.Identifier.Button._1,
 			fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
@@ -196,9 +209,14 @@ public class MyGame extends VariableFrameRateGame
 		 	fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateAction(gpName, net.java.games.input.Component.Identifier.Axis.X,
 		 	turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+			
 	}
 
 	public GameObject getAvatar() { return avatar; }
+
+	public AnimatedShape getAvatarShape() {return avatarS; }
+
+
 
 	@Override
 	public void update()
@@ -211,6 +229,10 @@ public class MyGame extends VariableFrameRateGame
 		float height = terr.getHeight(loc.x(), loc.z());
 		avatar.setLocalLocation(new Vector3f(loc.x(), height, loc.z()));
 		
+		avatarS.updateAnimation();
+
+		
+
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)(System.currentTimeMillis()-startTime)/1000.0f);
 		String elapsTimeStr = Integer.toString(elapsTimeSec);
