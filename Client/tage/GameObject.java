@@ -93,6 +93,7 @@ public class GameObject
 	private boolean defused;
 	private boolean detonated;
 	private boolean defusedArea;
+	private boolean active;
 	private TextureImage originalTexture;
 	private TextureImage def;
 	private TextureImage det;
