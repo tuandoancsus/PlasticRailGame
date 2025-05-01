@@ -22,9 +22,24 @@ import org.joml.*;
 import net.java.games.input.*;
 import net.java.games.input.Component.Identifier.*;
 import tage.networking.IGameConnection.ProtocolType;
+import tage.physics.PhysicsEngine;
+import tage.physics.PhysicsObject;
+import tage.physics.JBullet.JBulletPhysicsEngine;
+import tage.physics.JBullet.JBulletPhysicsObject;
 
 public class MyGame extends VariableFrameRateGame
 {
+	//physic
+	private PhysicsEngine physicsEngine;
+	private PhysicsObject planeP;
+	private boolean running = false;
+	private float vals[] = new float[16];
+
+	//pill
+	private boolean bottleHeld = false;
+	private PhysicsObject pillP, bottleP;
+	private float tossForce = 525.0f;
+
 	private static Engine engine;
 	private InputManager im;
 	private GhostManager gm;
@@ -34,9 +49,10 @@ public class MyGame extends VariableFrameRateGame
 	private Matrix4f initialTranslation, initialRotation, initialScale;
 	private double startTime, prevTime, elapsedTime, amt;
 
-	private GameObject avatar, avatar2, x, y, z, pillBottle, terr;
-	private ObjShape avatarS, avatar2S, ghostS, linxS, linyS, linzS, pillBottleS, terrS;
-	private TextureImage avatarT, avatar2T, ghostT, pillT, hills, grass, floor;
+	private GameObject avatar, avatar2, x, y, z, pillBottle, terr, plane,pill;
+	private AnimatedShape avatarS;
+	private ObjShape avatar2S, ghostS, linxS, linyS, linzS, pillBottleS, terrS, planeS, pillS;
+	private TextureImage avatarT, avatar2T, ghostT, hills, grass, floor, pillT;
 	private int lakeIslands, background; // skyboxes
 	private boolean avatarRendered = false;
 	private Light light;
@@ -70,21 +86,29 @@ public class MyGame extends VariableFrameRateGame
 	public void loadShapes()
 	{
 		ghostS = new ImportedModel("dolphinHighPoly.obj");
-		avatarS = new ImportedModel("avatar1.obj");
-		avatar2S = new ImportedModel("finalModel.obj");
+		//avatarS = new ImportedModel(" .obj");
+		avatarS = new AnimatedShape("test2.rkm", "test2.rks");
+		avatarS.loadAnimation("WALK","walkModel.rka");
+		avatarS.loadAnimation("IDLE","idle.rka");
+		avatarS.loadAnimation("RUN","sprint.rka");
+		avatarS.loadAnimation("JUMP","jump3.rka");
+
+		avatar2S = new ImportedModel("finalModel3.obj");
 		pillBottleS = new ImportedModel("PillBottle.obj");
+		pillS = new ImportedModel("pill.obj");
 		linxS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
 		linyS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,3f,0f));
 		linzS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,0f,-3f));
 
 		terrS = new TerrainPlane(1000); // pixels per axis = 1000x1000
 
+		planeS = new Plane();
 		
 	}
 
 	@Override
 	public void loadTextures()
-	{	avatarT = new TextureImage("avatar1Texture.png");
+	{	avatarT = new TextureImage("spiderman.png");
 		avatar2T = new TextureImage("davidbase.png");
 		ghostT = new TextureImage("redDolphin.jpg");
 		pillT = new TextureImage("pillbottle.png");
@@ -105,6 +129,8 @@ public class MyGame extends VariableFrameRateGame
 		initialScale = (new Matrix4f()).scaling(0.25f);
 		avatar.setLocalScale(initialScale);
 		avatar.setLocalRotation(initialRotation);
+		avatarS.playAnimation("IDLE", 0.1f, AnimatedShape.EndType.LOOP, 0);
+
 		avatar.getRenderStates().disableRendering();
 		//avatar.getRenderStates().setModelOrientationCorrection((new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f)));
 
@@ -122,10 +148,14 @@ public class MyGame extends VariableFrameRateGame
 		pillBottle = new GameObject(GameObject.root(), pillBottleS, pillT);
 		initialTranslation = (new Matrix4f()).translation(10,0,-10);
 		pillBottle.setLocalTranslation(initialTranslation);
-		initialScale = (new Matrix4f()).scaling(5.0f);
+		initialScale = (new Matrix4f()).scaling(1.0f);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(360.0f));
 		pillBottle.setLocalScale(initialScale);
 		pillBottle.setLocalRotation(initialRotation);
+		pill = new GameObject(GameObject.root(), pillS, pillT);
+		pill.setLocalTranslation(new Matrix4f().translation(10, 0, -10)); // start inside pillBottle
+		double[] tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
+		pill.setLocalScale(new Matrix4f().scaling(0.5f));
 
 		// build terrain
 		terr = new GameObject(GameObject.root(), terrS, floor);
@@ -137,7 +167,18 @@ public class MyGame extends VariableFrameRateGame
 
 		terr.getRenderStates().setTiling(1);
 		terr.getRenderStates().setTileFactor(10);
+		//build physic ground plane
 
+		Matrix4f terrainScaleMatrix = terr.getLocalScale();
+		Vector3f terrainScale = new Vector3f();
+		terrainScaleMatrix.getScale(terrainScale);
+
+Vector3f terrainPos = terr.getWorldLocation();
+
+		plane = new GameObject(GameObject.root(), planeS, grass);
+		plane.setLocalTranslation(new Matrix4f().translation(terrainPos.x(), terrainPos.y(), terrainPos.z()));
+		plane.setLocalScale(new Matrix4f().scaling(terrainScale));
+		
 		// add X,Y,-Z axes
 		x = new GameObject(GameObject.root(), linxS);
 		y = new GameObject(GameObject.root(), linyS);
@@ -173,6 +214,29 @@ public class MyGame extends VariableFrameRateGame
 		// ----------------- initialize camera ----------------
 		//positionCameraBehindAvatar();
 
+		// --- initialize physics system ---
+		float[] gravity = {0f, -5f, 0f};
+		physicsEngine = (engine.getSceneGraph()).getPhysicsEngine();
+		physicsEngine.setGravity(gravity);
+
+		// --- create physics world ---
+		float mass = 1.0f;
+		float up[ ] = {0,1,0};
+		float radius = 0.75f;
+		float height = 2.0f;
+		double[ ] tempTransform;
+
+		Matrix4f translation = new Matrix4f(plane.getLocalTranslation());
+		tempTransform = toDoubleArray(translation.get(vals));
+		
+		planeP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, new float[]{0,1,0}, 0.0f);
+		planeP.setBounciness(1.0f);
+		plane.setPhysicsObject(planeP);
+		engine.enableGraphicsWorldRender();
+		engine.enablePhysicsWorldRender();
+
+		running = true;
+
 		// ----------------- INPUTS SECTION -----------------------------
 		im = engine.getInputManager();
 		String gpName = im.getFirstGamepadName();
@@ -184,8 +248,12 @@ public class MyGame extends VariableFrameRateGame
 		// build some action objects for doing things in response to user input
 		FwdAction fwdAction = new FwdAction(this, protClient);
 		TurnAction turnAction = new TurnAction(this, protClient);
+		JumpAction jumpAction = new JumpAction(this, protClient);
 
 		// attach the action objects to keyboard and gamepad components
+		im.associateActionWithAllGamepads(
+			net.java.games.input.Component.Identifier.Button._0,
+			jumpAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 		im.associateActionWithAllGamepads(
 			net.java.games.input.Component.Identifier.Button._1,
 			fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
@@ -196,9 +264,40 @@ public class MyGame extends VariableFrameRateGame
 		 	fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateAction(gpName, net.java.games.input.Component.Identifier.Axis.X,
 		 	turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-	}
+			
+
+			 im.associateActionWithAllGamepads(
+					net.java.games.input.Component.Identifier.Button._2,
+					new AbstractInputAction() {
+						public void performAction(float time, net.java.games.input.Event evt) {
+							if (!bottleHeld && isCloseTo(avatar, pill, 3f) && isCloseTo(avatar, pillBottle, 3f)) {
+								attachBottleToAvatar();
+							} else if (bottleHeld) {
+								detachAndDropBottle();
+							}
+						}
+					},
+					InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+
+				im.associateActionWithAllGamepads(
+					net.java.games.input.Component.Identifier.Button._3,
+					new AbstractInputAction() {
+						public void performAction(float time, net.java.games.input.Event evt) {
+							if (bottleHeld) {
+								tossBottleForward();
+							}
+						}
+					},
+					InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+						
+			}
+	
 
 	public GameObject getAvatar() { return avatar; }
+
+	public AnimatedShape getAvatarShape() {return avatarS; }
+
+
 
 	@Override
 	public void update()
@@ -211,6 +310,7 @@ public class MyGame extends VariableFrameRateGame
 		float height = terr.getHeight(loc.x(), loc.z());
 		avatar.setLocalLocation(new Vector3f(loc.x(), height, loc.z()));
 		
+
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)(System.currentTimeMillis()-startTime)/1000.0f);
 		String elapsTimeStr = Integer.toString(elapsTimeSec);
@@ -224,6 +324,32 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f hud2Color = new Vector3f(1,1,1);
 		(engine.getHUDmanager()).setHUD1(dispStr1, hud1Color, 15, 15);
 		(engine.getHUDmanager()).setHUD2(dispStr2, hud2Color, 500, 15);
+
+		avatarS.updateAnimation();
+
+		if (running) {
+            AxisAngle4f aa = new AxisAngle4f();
+            Matrix4f mat = new Matrix4f();
+            Matrix4f mat2 = new Matrix4f().identity();
+            Matrix4f mat3 = new Matrix4f().identity();
+            checkForCollisions();
+            physicsEngine.update((float) elapsedTime);
+            for (GameObject go : engine.getSceneGraph().getGameObjects()) {
+                if (go.getPhysicsObject() != null) {
+                 
+                    mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
+                    mat2.set(3, 0, mat.m30());
+                    mat2.set(3, 1, mat.m31());
+                    mat2.set(3, 2, mat.m32());
+                    go.setLocalTranslation(mat2);
+
+                    // set rotation
+                    mat.getRotation(aa);
+                    mat3.rotation(aa);
+                    go.setLocalRotation(mat3);
+				}
+			}
+		}
 
 		// update inputs and camera
 		im.update((float)elapsedTime);
@@ -337,4 +463,125 @@ public class MyGame extends VariableFrameRateGame
 			}
 		}
 	}
+
+	// ------------------ UTILITY FUNCTIONS used by physics
+		private float[] toFloatArray(double[] arr)
+		{ if (arr == null) return null;
+		int n = arr.length;
+		float[] ret = new float[n];
+		for (int i = 0; i < n; i++)
+		{ ret[i] = (float)arr[i];
+		}
+		return ret;
+		}
+		private double[] toDoubleArray(float[] arr)
+		{ if (arr == null) return null;
+		int n = arr.length;
+		double[] ret = new double[n];
+		for (int i = 0; i < n; i++)
+		{ ret[i] = (double)arr[i];
+		}
+		return ret;
+		}
+
+private void checkForCollisions()
+{	com.bulletphysics.dynamics.DynamicsWorld dynamicsWorld;
+	com.bulletphysics.collision.broadphase.Dispatcher dispatcher;
+	com.bulletphysics.collision.narrowphase.PersistentManifold manifold;
+	com.bulletphysics.dynamics.RigidBody object1, object2;
+	com.bulletphysics.collision.narrowphase.ManifoldPoint contactPoint;
+
+	dynamicsWorld = ((JBulletPhysicsEngine)physicsEngine).getDynamicsWorld();
+	dispatcher = dynamicsWorld.getDispatcher();
+	int manifoldCount = dispatcher.getNumManifolds();
+	for (int i=0; i < manifoldCount; i++)
+	{	manifold = dispatcher.getManifoldByIndexInternal(i);
+		object1 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody0();
+		object2 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody1();
+		JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
+		JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
+		for (int j = 0; j < manifold.getNumContacts(); j++)
+		{	contactPoint = manifold.getContactPoint(j);
+			if (contactPoint.getDistance() < 0.0f)
+			{	System.out.println("---- hit between " + obj1 + " and " + obj2);
+				break;
+			}
+		}
+	}
+}
+private boolean isCloseTo(GameObject a, GameObject b, float distance) {
+    return a.getWorldLocation().distance(b.getWorldLocation()) < distance;
+}
+
+private void attachBottleToAvatar() {
+    pillBottle.setParent(avatar);
+    pillBottle.setLocalTranslation(new Matrix4f().translation(0.0f, 0.0f, 0.5f));
+    pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
+
+    pillBottle.propagateRotation(true);
+    pillBottle.propagateTranslation(true);
+    pillBottle.applyParentRotationToPosition(true);
+
+    if (bottleP != null) {
+        physicsEngine.removeObject(bottleP.getUID());
+        pillBottle.setPhysicsObject(null);
+        bottleP = null;
+    }
+
+    bottleHeld = true;
+    System.out.println("Picked up pill bottle");
+}
+
+private void detachAndDropBottle() {
+    pillBottle.setParent(GameObject.root());
+
+    Vector3f avatarPos = avatar.getWorldLocation();
+    Vector3f dropPos = new Vector3f(avatarPos.x(), avatarPos.y() + 1.0f, avatarPos.z());
+
+    pillBottle.setLocalTranslation(new Matrix4f().translation(dropPos));
+    pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
+
+    double[] tempTransform = toDoubleArray(pillBottle.getLocalTranslation().get(vals));
+    int uid = physicsEngine.nextUID();
+    bottleP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
+    bottleP.setBounciness(0.8f);
+    pillBottle.setPhysicsObject(bottleP);
+
+    bottleHeld = false;
+    System.out.println("Dropped pill bottle");
+}
+
+private void tossBottleForward() {
+    Vector3f worldPos = pillBottle.getWorldLocation();
+    Vector4f direction = new Vector4f(0f, 0f, 1f, 1f).mul(avatar.getWorldRotation());
+    Vector3f tossDir = new Vector3f(direction.x(), direction.y(), direction.z()).normalize().add(0f, 0.3f, 0f);
+
+    pillBottle.setParent(GameObject.root());
+    Vector3f startPos = new Vector3f(worldPos).add(tossDir.mul(1.0f)); // offset by 1 unit forward
+	pillBottle.setLocalTranslation(new Matrix4f().translation(startPos));
+    pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
+
+    if (bottleP != null) {
+        physicsEngine.removeObject(bottleP.getUID());
+    }
+
+    double[] tempTransform = toDoubleArray(pillBottle.getLocalTranslation().get(vals));
+    int uid = physicsEngine.nextUID();
+    bottleP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
+    bottleP.setBounciness(0.8f);
+    pillBottle.setPhysicsObject(bottleP);
+
+    float force = 555.0f; // same as tossForce
+    bottleP.applyForce(
+        tossDir.x() * force,
+        tossDir.y() * force,
+        tossDir.z() * force,
+        0f, 0f, 0f
+    );
+
+    bottleHeld = false;
+    System.out.println("Pill bottle tossed");
+	
+}	
+	
 }
