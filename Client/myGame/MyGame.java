@@ -36,8 +36,8 @@ public class MyGame extends VariableFrameRateGame
 	private float vals[] = new float[16];
 
 	//pill
-	private boolean pillHeld = false;
-	private PhysicsObject pillP;
+	private boolean bottleHeld = false;
+	private PhysicsObject pillP, bottleP;
 	private float tossForce = 525.0f;
 
 	private static Engine engine;
@@ -86,14 +86,14 @@ public class MyGame extends VariableFrameRateGame
 	public void loadShapes()
 	{
 		ghostS = new ImportedModel("dolphinHighPoly.obj");
-		//avatarS = new ImportedModel("avatar1.obj");
-		avatarS = new AnimatedShape("model.rkm", "model.rks");
+		//avatarS = new ImportedModel(" .obj");
+		avatarS = new AnimatedShape("test2.rkm", "test2.rks");
 		avatarS.loadAnimation("WALK","walkModel.rka");
 		avatarS.loadAnimation("IDLE","idle.rka");
 		avatarS.loadAnimation("RUN","sprint.rka");
 		avatarS.loadAnimation("JUMP","jump3.rka");
 
-		avatar2S = new ImportedModel("finalModel.obj");
+		avatar2S = new ImportedModel("finalModel3.obj");
 		pillBottleS = new ImportedModel("PillBottle.obj");
 		pillS = new ImportedModel("pill.obj");
 		linxS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
@@ -148,14 +148,14 @@ public class MyGame extends VariableFrameRateGame
 		pillBottle = new GameObject(GameObject.root(), pillBottleS, pillT);
 		initialTranslation = (new Matrix4f()).translation(10,0,-10);
 		pillBottle.setLocalTranslation(initialTranslation);
-		initialScale = (new Matrix4f()).scaling(5.0f);
+		initialScale = (new Matrix4f()).scaling(1.0f);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(360.0f));
 		pillBottle.setLocalScale(initialScale);
 		pillBottle.setLocalRotation(initialRotation);
 		pill = new GameObject(GameObject.root(), pillS, pillT);
-		pill.setLocalTranslation(new Matrix4f().translation(10, 1, -10)); // start inside pillBottle
+		pill.setLocalTranslation(new Matrix4f().translation(10, 0, -10)); // start inside pillBottle
 		double[] tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
-		pill.setLocalScale(new Matrix4f().scaling(1.2f));
+		pill.setLocalScale(new Matrix4f().scaling(0.5f));
 
 		// build terrain
 		terr = new GameObject(GameObject.root(), terrS, floor);
@@ -167,11 +167,17 @@ public class MyGame extends VariableFrameRateGame
 
 		terr.getRenderStates().setTiling(1);
 		terr.getRenderStates().setTileFactor(10);
-		
 		//build physic ground plane
+
+		Matrix4f terrainScaleMatrix = terr.getLocalScale();
+		Vector3f terrainScale = new Vector3f();
+		terrainScaleMatrix.getScale(terrainScale);
+
+Vector3f terrainPos = terr.getWorldLocation();
+
 		plane = new GameObject(GameObject.root(), planeS, grass);
-		plane.setLocalTranslation((new Matrix4f()).translation(0, -2.75f, 0));
-		plane.setLocalScale((new Matrix4f()).scaling(8f));
+		plane.setLocalTranslation(new Matrix4f().translation(terrainPos.x(), terrainPos.y(), terrainPos.z()));
+		plane.setLocalScale(new Matrix4f().scaling(terrainScale));
 		
 		// add X,Y,-Z axes
 		x = new GameObject(GameObject.root(), linxS);
@@ -223,8 +229,7 @@ public class MyGame extends VariableFrameRateGame
 		Matrix4f translation = new Matrix4f(plane.getLocalTranslation());
 		tempTransform = toDoubleArray(translation.get(vals));
 		
-		PhysicsObject planeP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, up, 0.0f);
-		
+		planeP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, new float[]{0,1,0}, 0.0f);
 		planeP.setBounciness(1.0f);
 		plane.setPhysicsObject(planeP);
 		engine.enableGraphicsWorldRender();
@@ -265,10 +270,10 @@ public class MyGame extends VariableFrameRateGame
 					net.java.games.input.Component.Identifier.Button._2,
 					new AbstractInputAction() {
 						public void performAction(float time, net.java.games.input.Event evt) {
-							if (!pillHeld && isCloseTo(avatar, pill, 3f) && isCloseTo(avatar, pillBottle, 3f)) {
-								attachPillToAvatar();
-							} else if (pillHeld) {
-								detachAndDropPill();
+							if (!bottleHeld && isCloseTo(avatar, pill, 3f) && isCloseTo(avatar, pillBottle, 3f)) {
+								attachBottleToAvatar();
+							} else if (bottleHeld) {
+								detachAndDropBottle();
 							}
 						}
 					},
@@ -278,8 +283,8 @@ public class MyGame extends VariableFrameRateGame
 					net.java.games.input.Component.Identifier.Button._3,
 					new AbstractInputAction() {
 						public void performAction(float time, net.java.games.input.Event evt) {
-							if (pillHeld) {
-								tossPillForward();
+							if (bottleHeld) {
+								tossBottleForward();
 							}
 						}
 					},
@@ -508,70 +513,75 @@ private boolean isCloseTo(GameObject a, GameObject b, float distance) {
     return a.getWorldLocation().distance(b.getWorldLocation()) < distance;
 }
 
-private void attachPillToAvatar() {
-    pill.setParent(avatar);
-    pill.setLocalTranslation(new Matrix4f().translation(0.0f, 0.0f, 0.5f));
-    pill.setLocalScale(new Matrix4f().scaling(1.2f));
+private void attachBottleToAvatar() {
+    pillBottle.setParent(avatar);
+    pillBottle.setLocalTranslation(new Matrix4f().translation(0.0f, 0.0f, 0.5f));
+    pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
 
-    pill.propagateRotation(true);
-    pill.propagateTranslation(true);
-    pill.applyParentRotationToPosition(true);
+    pillBottle.propagateRotation(true);
+    pillBottle.propagateTranslation(true);
+    pillBottle.applyParentRotationToPosition(true);
 
-    if (pillP != null) {
-        physicsEngine.removeObject(pillP.getUID());
-        pill.setPhysicsObject(null);
-        pillP = null;
+    if (bottleP != null) {
+        physicsEngine.removeObject(bottleP.getUID());
+        pillBottle.setPhysicsObject(null);
+        bottleP = null;
     }
 
-    pillHeld = true;
-    System.out.println("Picked up pill from bottle");
+    bottleHeld = true;
+    System.out.println("Picked up pill bottle");
 }
 
-private void detachAndDropPill() {
-    pill.setParent(GameObject.root());
+private void detachAndDropBottle() {
+    pillBottle.setParent(GameObject.root());
 
-    Vector3f worldPos = pill.getWorldLocation();
-    pill.setLocalTranslation(new Matrix4f().translation(worldPos));
-    pill.setLocalScale(new Matrix4f().scaling(1.2f));
+    Vector3f avatarPos = avatar.getWorldLocation();
+    Vector3f dropPos = new Vector3f(avatarPos.x(), avatarPos.y() + 1.0f, avatarPos.z());
 
-    double[] tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
+    pillBottle.setLocalTranslation(new Matrix4f().translation(dropPos));
+    pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
+
+    double[] tempTransform = toDoubleArray(pillBottle.getLocalTranslation().get(vals));
     int uid = physicsEngine.nextUID();
-    pillP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
-    pillP.setBounciness(0.8f);
-    pill.setPhysicsObject(pillP);
+    bottleP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
+    bottleP.setBounciness(0.8f);
+    pillBottle.setPhysicsObject(bottleP);
 
-    pillHeld = false;
-    System.out.println("Dropped pill");
+    bottleHeld = false;
+    System.out.println("Dropped pill bottle");
 }
 
-private void tossPillForward() {
-    Vector3f worldPos = pill.getWorldLocation();
+private void tossBottleForward() {
+    Vector3f worldPos = pillBottle.getWorldLocation();
     Vector4f direction = new Vector4f(0f, 0f, 1f, 1f).mul(avatar.getWorldRotation());
     Vector3f tossDir = new Vector3f(direction.x(), direction.y(), direction.z()).normalize().add(0f, 0.3f, 0f);
 
-    pill.setParent(GameObject.root());
-    pill.setLocalTranslation(new Matrix4f().translation(worldPos));
-    pill.setLocalScale(new Matrix4f().scaling(1.2f));
+    pillBottle.setParent(GameObject.root());
+    Vector3f startPos = new Vector3f(worldPos).add(tossDir.mul(1.0f)); // offset by 1 unit forward
+	pillBottle.setLocalTranslation(new Matrix4f().translation(startPos));
+    pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
 
-    if (pillP != null) {
-        physicsEngine.removeObject(pillP.getUID());
+    if (bottleP != null) {
+        physicsEngine.removeObject(bottleP.getUID());
     }
 
-    double[] tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
+    double[] tempTransform = toDoubleArray(pillBottle.getLocalTranslation().get(vals));
     int uid = physicsEngine.nextUID();
-    pillP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
-    pillP.setBounciness(0.8f);
-    pill.setPhysicsObject(pillP);
+    bottleP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
+    bottleP.setBounciness(0.8f);
+    pillBottle.setPhysicsObject(bottleP);
 
-    pillP.applyForce(
-        tossDir.x() * tossForce,
-        tossDir.y() * tossForce,
-        tossDir.z() * tossForce,
+    float force = 555.0f; // same as tossForce
+    bottleP.applyForce(
+        tossDir.x() * force,
+        tossDir.y() * force,
+        tossDir.z() * force,
         0f, 0f, 0f
     );
 
-    pillHeld = false;
-    System.out.println("Pill tossed");
-}
-
+    bottleHeld = false;
+    System.out.println("Pill bottle tossed");
+	
+}	
+	
 }

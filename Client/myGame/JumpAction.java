@@ -28,8 +28,6 @@ public class JumpAction extends AbstractInputAction
 			game.getAvatarShape().stopAnimation();
 			game.getAvatarShape().playAnimation("JUMP", 0.5f, AnimatedShape.EndType.STOP, 0);
 			isJumping = true;
-
-			// Automatically return to IDLE after jump duration (e.g., 1 second)
 			new java.util.Timer().schedule(
 				new java.util.TimerTask() {
 					@Override
@@ -38,7 +36,7 @@ public class JumpAction extends AbstractInputAction
 						isJumping = false;
 					}
 				},
-				1000 // delay in milliseconds (match jump duration)
+				1000
 			);
 		}
 	}
