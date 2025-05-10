@@ -60,11 +60,11 @@ public class MyGame extends VariableFrameRateGame
 	private Matrix4f initialTranslation, initialRotation, initialScale;
 	private double startTime, prevTime, elapsedTime, amt;
 
-	private GameObject avatar, x, y, z, pillBottle, terr, plane,pill, virusRoot;
+	private GameObject avatar, avatar2, x, y, z, pillBottle, terr, plane,pill, virusRoot;
 	private AnimatedShape avatarS;
 	private ObjShape avatar2S, virusS, ghostS, linxS, linyS, linzS, pillBottleS, terrS, planeS, pillS;
 	private VirusFactory viruses;
-	private TextureImage avatarT, virusTex, ghostT, hills, grass, floor, pillT;
+	private TextureImage avatarT, avatar2T, virusTex, ghostT, hills, grass, floor, pillT;
 
 	private int background; // skyboxes
 	private boolean avatarRendered = false;
@@ -430,7 +430,7 @@ public class MyGame extends VariableFrameRateGame
 	{	elapsedTime = System.currentTimeMillis() - prevTime;
 		prevTime = System.currentTimeMillis();
 		amt = elapsedTime * 0.03;
-		//Camera c = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
+		Camera c = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
 
 		Vector3f loc = avatar.getWorldLocation();
 		float height = terr.getHeight(loc.x(), loc.z());
@@ -495,16 +495,6 @@ public class MyGame extends VariableFrameRateGame
 			redSpotlight.disable();
 			greenSpotlight.enable();
 			switchedLights = true;
-		}
-
-		// Sounds
-		backgroundMusic.setLocation(avatar.getWorldLocation());
-		collisionSound.setLocation(pillBottle.getWorldLocation());
-		setEarParameters();
-
-		if(counter > 10) {
-			backgroundMusic.stop();
-			(engine.getHUDmanager()).setHUD1("You lose! Too many viruses spawned.", hud1Color, 50, 200);
 		}
 	}
 
@@ -749,10 +739,12 @@ private void tossPillForward() {
         0f, 0f, 0f
     );
 
-    bottleHeld = false;
-    System.out.println("Pill tossed");
-	
-}	
+		bottleHeld = false;
+		System.out.println("Pill tossed");
+		
+	}	
+		
+
 		public ObjShape getNPCshape() { return avatar2S; }
 		public TextureImage getNPCtexture() { return virusTex; }
 }
