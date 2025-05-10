@@ -21,7 +21,7 @@ public class CameraOrbit3D {
         avatar = av;
         cameraAzimuth = 0.0f;
         cameraElevation = 20.0f;
-        cameraRadius = 2.0f;
+        cameraRadius = 4.0f;
         setupInputs(gpName);
         updateCameraPosition();
     }

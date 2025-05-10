@@ -4,8 +4,10 @@ import tage.*;
 import tage.shapes.*;
 import tage.input.*;
 import tage.input.action.*;
+import tage.audio.*;
 
 import java.lang.Math;
+
 import java.awt.*;
 
 import java.awt.event.*;
@@ -13,6 +15,7 @@ import java.awt.event.*;
 import java.io.*;
 import java.util.*;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.net.InetAddress;
 
 import java.net.UnknownHostException;
@@ -49,14 +52,19 @@ public class MyGame extends VariableFrameRateGame
 	private Matrix4f initialTranslation, initialRotation, initialScale;
 	private double startTime, prevTime, elapsedTime, amt;
 
-	private GameObject avatar, avatar2, x, y, z, pillBottle, terr, plane,pill;
+	private GameObject avatar, x, y, z, pillBottle, terr, plane,pill, virusRoot;
 	private AnimatedShape avatarS;
-	private ObjShape avatar2S, ghostS, linxS, linyS, linzS, pillBottleS, terrS, planeS, pillS;
-	private TextureImage avatarT, avatar2T, ghostT, hills, grass, floor, pillT;
-	private int lakeIslands, background; // skyboxes
+	private ObjShape avatar2S, virusS, ghostS, linxS, linyS, linzS, pillBottleS, terrS, planeS, pillS;
+	private VirusFactory viruses;
+	private TextureImage avatarT, virusTex, ghostT, hills, grass, floor, pillT;
+
+	private int background; // skyboxes
 	private boolean avatarRendered = false;
 	private Light light;
 	private CameraOrbit3D orbitController;
+
+	private IAudioManager audioManager;
+	private Sound backgroundMusic, collisionSound, soundEffect2;
 
 	private String serverAddress;
 	private int serverPort;
@@ -86,7 +94,6 @@ public class MyGame extends VariableFrameRateGame
 	public void loadShapes()
 	{
 		ghostS = new ImportedModel("dolphinHighPoly.obj");
-		//avatarS = new ImportedModel(" .obj");
 		avatarS = new AnimatedShape("test2.rkm", "test2.rks");
 		avatarS.loadAnimation("WALK","walkModel.rka");
 		avatarS.loadAnimation("IDLE","idle.rka");
@@ -94,11 +101,12 @@ public class MyGame extends VariableFrameRateGame
 		avatarS.loadAnimation("JUMP","jump3.rka");
 
 		avatar2S = new ImportedModel("finalModel3.obj");
+		//virusS = new ImportedModel("avatar1.obj");
 		pillBottleS = new ImportedModel("PillBottle.obj");
 		pillS = new ImportedModel("pill.obj");
-		linxS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
-		linyS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,3f,0f));
-		linzS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,0f,-3f));
+		// linxS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
+		// linyS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,3f,0f));
+		// linzS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,0f,-3f));
 
 		terrS = new TerrainPlane(1000); // pixels per axis = 1000x1000
 
@@ -109,39 +117,72 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadTextures()
 	{	avatarT = new TextureImage("spiderman.png");
-		avatar2T = new TextureImage("davidbase.png");
+		virusTex = new TextureImage("spidermoon.png");
 		ghostT = new TextureImage("redDolphin.jpg");
 		pillT = new TextureImage("pillbottle.png");
 
+
 		hills = new TextureImage("hills.jpg");
 		floor = new TextureImage("floor.jpg");
-		
 	}
+
+
+	@Override
+	public void loadSounds()
+	{	AudioResource resource1, resource2, resource3;
+		audioManager = engine.getAudioManager();
+		resource1 = audioManager.createAudioResource("BGMusic.wav", AudioResourceType.AUDIO_STREAM);
+		resource2 = audioManager.createAudioResource("collision.wav", AudioResourceType.AUDIO_SAMPLE);
+		//resource3 = audioManager.createAudioResource("soundEffect2.wav", AudioResourceType.AUDIO_SAMPLE);
+
+		backgroundMusic = new Sound(resource1, SoundType.SOUND_MUSIC, 5, true);
+		collisionSound = new Sound(resource2, SoundType.SOUND_EFFECT, 100, true);
+		// soundEffect2 = new Sound(resource3, SoundType.SOUND_EFFECT, 100, false);
+
+		backgroundMusic.initialize(audioManager);
+		collisionSound.initialize(audioManager);
+		collisionSound.setMaxDistance(50.0f);
+		collisionSound.setMinDistance(0.5f);
+		collisionSound.setRollOff(1.0f);
+		// soundEffect2.initialize(audioManager);
+	}
+
+
 	@Override
 	public void buildObjects()
 	{	Matrix4f initialTranslation, initialRotation, initialScale;
 
 		// build avatar
+		// avatar = new GameObject(GameObject.root(), avatarS, avatarT);
+		// initialTranslation = (new Matrix4f()).translation(-1f,0f,1f);
+		// avatar.setLocalTranslation(initialTranslation);
+		// initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
+		// initialScale = (new Matrix4f()).scaling(0.25f);
+		// avatar.setLocalScale(initialScale);
+		// avatar.setLocalRotation(initialRotation);
+		//avatar.getRenderStates().disableRendering();
+		//avatar.getRenderStates().setModelOrientationCorrection((new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f)));
+
 		avatar = new GameObject(GameObject.root(), avatarS, avatarT);
 		initialTranslation = (new Matrix4f()).translation(-1f,2,1f);
 		avatar.setLocalTranslation(initialTranslation);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
-		initialScale = (new Matrix4f()).scaling(0.25f);
+		initialScale = (new Matrix4f()).scaling(0.70f);
 		avatar.setLocalScale(initialScale);
 		avatar.setLocalRotation(initialRotation);
 		avatarS.playAnimation("IDLE", 0.1f, AnimatedShape.EndType.LOOP, 0);
 
-		avatar.getRenderStates().disableRendering();
+		//avatar.getRenderStates().disableRendering();
 		//avatar.getRenderStates().setModelOrientationCorrection((new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f)));
 
-		avatar2 = new GameObject(GameObject.root(), avatar2S, avatar2T);
-		initialTranslation = (new Matrix4f()).translation(-1f,2,1f);
-		avatar2.setLocalTranslation(initialTranslation);
-		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
-		initialScale = (new Matrix4f()).scaling(0.25f);
-		avatar2.setLocalScale(initialScale);
-		avatar2.setLocalRotation(initialRotation);
-		avatar2.getRenderStates().disableRendering();
+		// avatar2 = new GameObject(GameObject.root(), avatar2S, avatar2T);
+		// initialTranslation = (new Matrix4f()).translation(-1f,2,1f);
+		// avatar2.setLocalTranslation(initialTranslation);
+		// initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
+		// initialScale = (new Matrix4f()).scaling(0.25f);
+		// avatar2.setLocalScale(initialScale);
+		// avatar2.setLocalRotation(initialRotation);
+		// avatar2.getRenderStates().disableRendering();
 
 
 		// build Pill Bottle building
@@ -173,19 +214,27 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f terrainScale = new Vector3f();
 		terrainScaleMatrix.getScale(terrainScale);
 
-Vector3f terrainPos = terr.getWorldLocation();
+		Vector3f terrainPos = terr.getWorldLocation();
 
 		plane = new GameObject(GameObject.root(), planeS, grass);
 		plane.setLocalTranslation(new Matrix4f().translation(terrainPos.x(), terrainPos.y(), terrainPos.z()));
 		plane.setLocalScale(new Matrix4f().scaling(terrainScale));
 		
 		// add X,Y,-Z axes
-		x = new GameObject(GameObject.root(), linxS);
-		y = new GameObject(GameObject.root(), linyS);
-		z = new GameObject(GameObject.root(), linzS);
-		(x.getRenderStates()).setColor(new Vector3f(1f,0f,0f));
-		(y.getRenderStates()).setColor(new Vector3f(0f,1f,0f));
-		(z.getRenderStates()).setColor(new Vector3f(0f,0f,1f));
+		// x = new GameObject(GameObject.root(), linxS);
+		// y = new GameObject(GameObject.root(), linyS);
+		// z = new GameObject(GameObject.root(), linzS);
+		// (x.getRenderStates()).setColor(new Vector3f(1f,0f,0f));
+		// (y.getRenderStates()).setColor(new Vector3f(0f,1f,0f));
+		// (z.getRenderStates()).setColor(new Vector3f(0f,0f,1f));
+
+		virusRoot = new GameObject(GameObject.root());
+		viruses = new VirusFactory(avatar2S, virusTex, virusRoot);
+		
+	}
+
+	static float randf(float min, float max) {
+    	return ThreadLocalRandom.current().nextFloat() * (max - min) + min;
 	}
 
 	@Override
@@ -232,10 +281,18 @@ Vector3f terrainPos = terr.getWorldLocation();
 		planeP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, new float[]{0,1,0}, 0.0f);
 		planeP.setBounciness(1.0f);
 		plane.setPhysicsObject(planeP);
-		engine.enableGraphicsWorldRender();
-		engine.enablePhysicsWorldRender();
+		//engine.enableGraphicsWorldRender();
+		//engine.enablePhysicsWorldRender();
 
 		running = true;
+
+		// ----------------- SOUNDS SECTION ----------------
+		backgroundMusic.setLocation(avatar.getWorldLocation());
+		collisionSound.setLocation(pillBottle.getWorldLocation());
+		setEarParameters();
+		backgroundMusic.play();
+		collisionSound.play();
+
 
 		// ----------------- INPUTS SECTION -----------------------------
 		im = engine.getInputManager();
@@ -266,31 +323,31 @@ Vector3f terrainPos = terr.getWorldLocation();
 		 	turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 			
 
-			 im.associateActionWithAllGamepads(
-					net.java.games.input.Component.Identifier.Button._2,
-					new AbstractInputAction() {
-						public void performAction(float time, net.java.games.input.Event evt) {
-							if (!bottleHeld && isCloseTo(avatar, pill, 3f) && isCloseTo(avatar, pillBottle, 3f)) {
-								attachBottleToAvatar();
-							} else if (bottleHeld) {
-								detachAndDropBottle();
-							}
-						}
-					},
-					InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+		im.associateActionWithAllGamepads(
+			net.java.games.input.Component.Identifier.Button._2,
+			new AbstractInputAction() {
+				public void performAction(float time, net.java.games.input.Event evt) {
+					if (!bottleHeld && isCloseTo(avatar, pillBottle, 5f)) {
+						attachBottleToAvatar();
+					} else if (bottleHeld) {
+						detachAndDropBottle();
+					}
+				}
+			},
+			InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 
-				im.associateActionWithAllGamepads(
-					net.java.games.input.Component.Identifier.Button._3,
-					new AbstractInputAction() {
-						public void performAction(float time, net.java.games.input.Event evt) {
-							if (bottleHeld) {
-								tossBottleForward();
-							}
-						}
-					},
-					InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
-						
-			}
+		im.associateActionWithAllGamepads(
+			net.java.games.input.Component.Identifier.Button._3,
+			new AbstractInputAction() {
+				public void performAction(float time, net.java.games.input.Event evt) {
+					if (bottleHeld) {
+						tossBottleForward();
+					}
+				}
+			},
+			InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+				
+	}
 	
 
 	public GameObject getAvatar() { return avatar; }
@@ -299,12 +356,18 @@ Vector3f terrainPos = terr.getWorldLocation();
 
 
 
+	public void setEarParameters()
+	{	Camera camera = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
+		audioManager.getEar().setLocation(avatar.getWorldLocation());
+		audioManager.getEar().setOrientation(camera.getN(), new Vector3f(0.0f, 1.0f, 0.0f));
+	}
+
 	@Override
 	public void update()
 	{	elapsedTime = System.currentTimeMillis() - prevTime;
 		prevTime = System.currentTimeMillis();
 		amt = elapsedTime * 0.03;
-		Camera c = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
+		//Camera c = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
 
 		Vector3f loc = avatar.getWorldLocation();
 		float height = terr.getHeight(loc.x(), loc.z());
@@ -316,10 +379,11 @@ Vector3f terrainPos = terr.getWorldLocation();
 		String elapsTimeStr = Integer.toString(elapsTimeSec);
 		String counterStr = Integer.toString(counter);
 		String dispStr1 = "Time = " + elapsTimeStr;
-		String dispStr2 = "camera position = "
-			+ (c.getLocation()).x()
-			+ ", " + (c.getLocation()).y()
-			+ ", " + (c.getLocation()).z();
+		String dispStr2 = "Virus Count = " + counterStr;
+		// String dispStr2 = "camera position = "
+		// 	+ (c.getLocation()).x()
+		// 	+ ", " + (c.getLocation()).y()
+		// 	+ ", " + (c.getLocation()).z();
 		Vector3f hud1Color = new Vector3f(1,0,0);
 		Vector3f hud2Color = new Vector3f(1,1,1);
 		(engine.getHUDmanager()).setHUD1(dispStr1, hud1Color, 15, 15);
@@ -355,6 +419,16 @@ Vector3f terrainPos = terr.getWorldLocation();
 		im.update((float)elapsedTime);
 		orbitController.updateCameraPosition();
 		processNetworking((float)elapsedTime);
+
+		// Sounds
+		backgroundMusic.setLocation(avatar.getWorldLocation());
+		collisionSound.setLocation(pillBottle.getWorldLocation());
+		setEarParameters();
+
+		if(counter > 10) {
+			backgroundMusic.stop();
+			(engine.getHUDmanager()).setHUD1("You lose! Too many viruses spawned.", hud1Color, 50, 200);
+		}
 	}
 
 	@Override
@@ -396,30 +470,35 @@ Vector3f terrainPos = terr.getWorldLocation();
 				{ (engine.getSceneGraph()).setSkyBoxEnabled(false);
 				break;
 			}
-			case KeyEvent.VK_D:
+			case KeyEvent.VK_E:
 			{
-				if(!avatarRendered){
-					avatar.getRenderStates().enableRendering();
-					avatarRendered = true;
-					orbitController.setAvatar(avatar);
-				}
+				// spawn random viruses
+				// Vector3f p = new Vector3f(randf(-10,10), 0, randf(-10,10));
+				// viruses.spawn(p, 0.5f, randf(0,360));
+				// System.out.println("spawning virus at " + p.x() + ", " + p.y() + ", " + p.z());
+				protClient.sendNeedNPCMessage();
+				counter++;
 				break;
 			}
 			case KeyEvent.VK_F:
 			{
-				if(!avatarRendered){
-					avatar2.getRenderStates().enableRendering();
-					avatarRendered = true;
-					orbitController.setAvatar(avatar2);
-					avatar = avatar2;
-				}
+				// if(!avatarRendered){
+				// 	avatar2.getRenderStates().enableRendering();
+				// 	avatarRendered = true;
+				// 	orbitController.setAvatar(avatar2);
+				// 	avatar = avatar2;
+				// }
 				break;
+			}
+			case KeyEvent.VK_P:
+			{
+				backgroundMusic.togglePause();
 			}
 		}
 		super.keyPressed(e);
 	}
 
-	// ---------- NETWORKING SECTION ----------------
+// -------------------- NETWORKING SECTION --------------------
 
 	public ObjShape getGhostShape() { return ghostS; }
 	public TextureImage getGhostTexture() { return ghostT; }
@@ -442,6 +521,7 @@ Vector3f terrainPos = terr.getWorldLocation();
 		{	// Send the initial join message with a unique identifier for this client
 			System.out.println("sending join message to protocol host");
 			protClient.sendJoinMessage();
+			protClient.sendNeedNPCMessage();
 		}
 	}
 	
@@ -464,7 +544,8 @@ Vector3f terrainPos = terr.getWorldLocation();
 		}
 	}
 
-	// ------------------ UTILITY FUNCTIONS used by physics
+// ------------------ UTILITY FUNCTIONS used by physics ------------------
+
 		private float[] toFloatArray(double[] arr)
 		{ if (arr == null) return null;
 		int n = arr.length;
@@ -484,104 +565,108 @@ Vector3f terrainPos = terr.getWorldLocation();
 		return ret;
 		}
 
-private void checkForCollisions()
-{	com.bulletphysics.dynamics.DynamicsWorld dynamicsWorld;
-	com.bulletphysics.collision.broadphase.Dispatcher dispatcher;
-	com.bulletphysics.collision.narrowphase.PersistentManifold manifold;
-	com.bulletphysics.dynamics.RigidBody object1, object2;
-	com.bulletphysics.collision.narrowphase.ManifoldPoint contactPoint;
+	private void checkForCollisions()
+	{	com.bulletphysics.dynamics.DynamicsWorld dynamicsWorld;
+		com.bulletphysics.collision.broadphase.Dispatcher dispatcher;
+		com.bulletphysics.collision.narrowphase.PersistentManifold manifold;
+		com.bulletphysics.dynamics.RigidBody object1, object2;
+		com.bulletphysics.collision.narrowphase.ManifoldPoint contactPoint;
 
-	dynamicsWorld = ((JBulletPhysicsEngine)physicsEngine).getDynamicsWorld();
-	dispatcher = dynamicsWorld.getDispatcher();
-	int manifoldCount = dispatcher.getNumManifolds();
-	for (int i=0; i < manifoldCount; i++)
-	{	manifold = dispatcher.getManifoldByIndexInternal(i);
-		object1 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody0();
-		object2 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody1();
-		JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
-		JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
-		for (int j = 0; j < manifold.getNumContacts(); j++)
-		{	contactPoint = manifold.getContactPoint(j);
-			if (contactPoint.getDistance() < 0.0f)
-			{	System.out.println("---- hit between " + obj1 + " and " + obj2);
-				break;
+		dynamicsWorld = ((JBulletPhysicsEngine)physicsEngine).getDynamicsWorld();
+		dispatcher = dynamicsWorld.getDispatcher();
+		int manifoldCount = dispatcher.getNumManifolds();
+		for (int i=0; i < manifoldCount; i++)
+		{	manifold = dispatcher.getManifoldByIndexInternal(i);
+			object1 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody0();
+			object2 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody1();
+			JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
+			JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
+			for (int j = 0; j < manifold.getNumContacts(); j++)
+			{	contactPoint = manifold.getContactPoint(j);
+				if (contactPoint.getDistance() < 0.0f)
+				{	System.out.println("---- hit between " + obj1 + " and " + obj2);
+					break;
+				}
 			}
 		}
 	}
-}
-private boolean isCloseTo(GameObject a, GameObject b, float distance) {
-    return a.getWorldLocation().distance(b.getWorldLocation()) < distance;
-}
-
-private void attachBottleToAvatar() {
-    pillBottle.setParent(avatar);
-    pillBottle.setLocalTranslation(new Matrix4f().translation(0.0f, 0.0f, 0.5f));
-    pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
-
-    pillBottle.propagateRotation(true);
-    pillBottle.propagateTranslation(true);
-    pillBottle.applyParentRotationToPosition(true);
-
-    if (bottleP != null) {
-        physicsEngine.removeObject(bottleP.getUID());
-        pillBottle.setPhysicsObject(null);
-        bottleP = null;
-    }
-
-    bottleHeld = true;
-    System.out.println("Picked up pill bottle");
-}
-
-private void detachAndDropBottle() {
-    pillBottle.setParent(GameObject.root());
-
-    Vector3f avatarPos = avatar.getWorldLocation();
-    Vector3f dropPos = new Vector3f(avatarPos.x(), avatarPos.y() + 1.0f, avatarPos.z());
-
-    pillBottle.setLocalTranslation(new Matrix4f().translation(dropPos));
-    pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
-
-    double[] tempTransform = toDoubleArray(pillBottle.getLocalTranslation().get(vals));
-    int uid = physicsEngine.nextUID();
-    bottleP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
-    bottleP.setBounciness(0.8f);
-    pillBottle.setPhysicsObject(bottleP);
-
-    bottleHeld = false;
-    System.out.println("Dropped pill bottle");
-}
-
-private void tossBottleForward() {
-    Vector3f worldPos = pillBottle.getWorldLocation();
-    Vector4f direction = new Vector4f(0f, 0f, 1f, 1f).mul(avatar.getWorldRotation());
-    Vector3f tossDir = new Vector3f(direction.x(), direction.y(), direction.z()).normalize().add(0f, 0.3f, 0f);
-
-    pillBottle.setParent(GameObject.root());
-    Vector3f startPos = new Vector3f(worldPos).add(tossDir.mul(1.0f)); // offset by 1 unit forward
-	pillBottle.setLocalTranslation(new Matrix4f().translation(startPos));
-    pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
-
-    if (bottleP != null) {
-        physicsEngine.removeObject(bottleP.getUID());
-    }
-
-    double[] tempTransform = toDoubleArray(pillBottle.getLocalTranslation().get(vals));
-    int uid = physicsEngine.nextUID();
-    bottleP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
-    bottleP.setBounciness(0.8f);
-    pillBottle.setPhysicsObject(bottleP);
-
-    float force = 555.0f; // same as tossForce
-    bottleP.applyForce(
-        tossDir.x() * force,
-        tossDir.y() * force,
-        tossDir.z() * force,
-        0f, 0f, 0f
-    );
-
-    bottleHeld = false;
-    System.out.println("Pill bottle tossed");
 	
-}	
-	
+	private boolean isCloseTo(GameObject a, GameObject b, float distance) {
+		return a.getWorldLocation().distance(b.getWorldLocation()) < distance;
+	}
+
+	private void attachBottleToAvatar() {
+		pillBottle.setParent(avatar);
+		pillBottle.setLocalTranslation(new Matrix4f().translation(0.0f, 0.0f, 0.5f));
+		pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
+
+		pillBottle.propagateRotation(true);
+		pillBottle.propagateTranslation(true);
+		pillBottle.applyParentRotationToPosition(true);
+
+		if (bottleP != null) {
+			physicsEngine.removeObject(bottleP.getUID());
+			pillBottle.setPhysicsObject(null);
+			bottleP = null;
+		}
+
+		bottleHeld = true;
+		System.out.println("Picked up pill bottle");
+	}
+
+	private void detachAndDropBottle() {
+		pillBottle.setParent(GameObject.root());
+
+		Vector3f avatarPos = avatar.getWorldLocation();
+		Vector3f dropPos = new Vector3f(avatarPos.x(), avatarPos.y() + 1.0f, avatarPos.z());
+
+		pillBottle.setLocalTranslation(new Matrix4f().translation(dropPos));
+		pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
+
+		double[] tempTransform = toDoubleArray(pillBottle.getLocalTranslation().get(vals));
+		int uid = physicsEngine.nextUID();
+		bottleP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
+		bottleP.setBounciness(0.8f);
+		pillBottle.setPhysicsObject(bottleP);
+
+		bottleHeld = false;
+		System.out.println("Dropped pill bottle");
+	}
+
+	private void tossBottleForward() {
+		Vector3f worldPos = pillBottle.getWorldLocation();
+		Vector4f direction = new Vector4f(0f, 0f, 1f, 1f).mul(avatar.getWorldRotation());
+		Vector3f tossDir = new Vector3f(direction.x(), direction.y(), direction.z()).normalize().add(0f, 0.3f, 0f);
+
+		pillBottle.setParent(GameObject.root());
+		Vector3f startPos = new Vector3f(worldPos).add(tossDir.mul(1.0f)); // offset by 1 unit forward
+		pillBottle.setLocalTranslation(new Matrix4f().translation(startPos));
+		pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
+
+		if (bottleP != null) {
+			physicsEngine.removeObject(bottleP.getUID());
+		}
+
+		double[] tempTransform = toDoubleArray(pillBottle.getLocalTranslation().get(vals));
+		int uid = physicsEngine.nextUID();
+		bottleP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
+		bottleP.setBounciness(0.8f);
+		pillBottle.setPhysicsObject(bottleP);
+
+		float force = 555.0f; // same as tossForce
+		bottleP.applyForce(
+			tossDir.x() * force,
+			tossDir.y() * force,
+			tossDir.z() * force,
+			0f, 0f, 0f
+		);
+
+		bottleHeld = false;
+		System.out.println("Pill bottle tossed");
+		
+	}	
+		
+
+		public ObjShape getNPCshape() { return avatar2S; }
+		public TextureImage getNPCtexture() { return virusTex; }
 }

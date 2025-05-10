@@ -14,6 +14,7 @@ public class GhostManager
 {
 	private MyGame game;
 	private Vector<GhostAvatar> ghostAvatars = new Vector<GhostAvatar>();
+	private Matrix4f initialTranslation, initialRotation, initialScale;
 
 	public GhostManager(VariableFrameRateGame vfrg)
 	{	game = (MyGame)vfrg;
@@ -24,6 +25,8 @@ public class GhostManager
 		ObjShape s = game.getGhostShape();
 		TextureImage t = game.getGhostTexture();
 		GhostAvatar newAvatar = new GhostAvatar(id, s, t, position);
+		initialScale = (new Matrix4f()).scaling(0.70f);
+		newAvatar.setLocalScale(initialScale);
 		//Matrix4f initialScale = (new Matrix4f()).scaling(0.25f);
 		//newAvatar.setLocalScale(initialScale);
 		ghostAvatars.add(newAvatar);
