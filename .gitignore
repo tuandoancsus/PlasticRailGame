@@ -1,5 +1,5 @@
 # Java build output
-*.class
+**/*.class
 *.jar
 *.war
 *.ear
@@ -19,3 +19,8 @@
 # OS junk files
 .DS_Store
 Thumbs.db
+
+/bin/
+/out/
+/build/
+

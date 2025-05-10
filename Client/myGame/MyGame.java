@@ -743,8 +743,7 @@ private void tossPillForward() {
 		System.out.println("Pill tossed");
 		
 	}	
-		
 
-		public ObjShape getNPCshape() { return avatar2S; }
-		public TextureImage getNPCtexture() { return virusTex; }
+	public ObjShape getNPCshape() { return avatar2S; }
+	public TextureImage getNPCtexture() { return virusTex; }
 }
