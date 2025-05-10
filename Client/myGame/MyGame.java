@@ -48,6 +48,7 @@ public class MyGame extends VariableFrameRateGame
 	private GhostManager gm;
 
 	private int counter=0;
+	private boolean gameOver = false;
 	private Vector3f currentPosition;
 	private Matrix4f initialTranslation, initialRotation, initialScale;
 	private double startTime, prevTime, elapsedTime, amt;
@@ -103,7 +104,7 @@ public class MyGame extends VariableFrameRateGame
 		avatar2S = new ImportedModel("finalModel3.obj");
 		//virusS = new ImportedModel("avatar1.obj");
 		pillBottleS = new ImportedModel("PillBottle.obj");
-		pillS = new ImportedModel("pill.obj");
+		pillS = new Sphere();
 		// linxS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
 		// linyS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,3f,0f));
 		// linzS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,0f,-3f));
@@ -151,6 +152,9 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void buildObjects()
 	{	Matrix4f initialTranslation, initialRotation, initialScale;
+		double[ ] tempTransform;
+		float radius = 0.75f;
+		float height = 2.0f;
 
 		// build avatar
 		// avatar = new GameObject(GameObject.root(), avatarS, avatarT);
@@ -172,6 +176,7 @@ public class MyGame extends VariableFrameRateGame
 		avatar.setLocalRotation(initialRotation);
 		avatarS.playAnimation("IDLE", 0.1f, AnimatedShape.EndType.LOOP, 0);
 
+
 		//avatar.getRenderStates().disableRendering();
 		//avatar.getRenderStates().setModelOrientationCorrection((new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f)));
 
@@ -187,16 +192,24 @@ public class MyGame extends VariableFrameRateGame
 
 		// build Pill Bottle building
 		pillBottle = new GameObject(GameObject.root(), pillBottleS, pillT);
-		initialTranslation = (new Matrix4f()).translation(10,0,-10);
+		initialTranslation = (new Matrix4f()).translation(-1f,2,10); // Original is 10,0,-10
 		pillBottle.setLocalTranslation(initialTranslation);
 		initialScale = (new Matrix4f()).scaling(1.0f);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(360.0f));
 		pillBottle.setLocalScale(initialScale);
 		pillBottle.setLocalRotation(initialRotation);
+
+		
+		
 		pill = new GameObject(GameObject.root(), pillS, pillT);
-		pill.setLocalTranslation(new Matrix4f().translation(10, 0, -10)); // start inside pillBottle
-		double[] tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
+		pill.setLocalTranslation(new Matrix4f().translation(10, 5, -10)); 
+		//double[] tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
 		pill.setLocalScale(new Matrix4f().scaling(0.5f));
+
+		tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
+		pillP = (engine.getSceneGraph()).addPhysicsSphere(1.0f, tempTransform, radius);
+		pillP.setBounciness(0.2f);
+		pill.setPhysicsObject(pillP);
 
 		// build terrain
 		terr = new GameObject(GameObject.root(), terrS, floor);
@@ -214,11 +227,16 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f terrainScale = new Vector3f();
 		terrainScaleMatrix.getScale(terrainScale);
 
-		Vector3f terrainPos = terr.getWorldLocation();
+		//Vector3f terrainPos = terr.getWorldLocation();
+		// plane = new GameObject(GameObject.root(), planeS, grass);
+		// plane.setLocalTranslation(new Matrix4f().translation(terrainPos.x(), terrainPos.y(), terrainPos.z()));
+		// plane.setLocalScale(new Matrix4f().scaling(terrainScale));
 
-		plane = new GameObject(GameObject.root(), planeS, grass);
-		plane.setLocalTranslation(new Matrix4f().translation(terrainPos.x(), terrainPos.y(), terrainPos.z()));
-		plane.setLocalScale(new Matrix4f().scaling(terrainScale));
+		Matrix4f translation = new Matrix4f(terr.getLocalTranslation());
+		tempTransform = toDoubleArray(translation.get(vals));
+		planeP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, new float[]{0,1,0}, 0.0f);
+		planeP.setBounciness(1.0f);
+		terr.setPhysicsObject(planeP);
 		
 		// add X,Y,-Z axes
 		// x = new GameObject(GameObject.root(), linxS);
@@ -230,6 +248,9 @@ public class MyGame extends VariableFrameRateGame
 
 		virusRoot = new GameObject(GameObject.root());
 		viruses = new VirusFactory(avatar2S, virusTex, virusRoot);
+
+		engine.enableGraphicsWorldRender();
+		engine.enablePhysicsWorldRender();
 		
 	}
 
@@ -275,12 +296,9 @@ public class MyGame extends VariableFrameRateGame
 		float height = 2.0f;
 		double[ ] tempTransform;
 
-		Matrix4f translation = new Matrix4f(plane.getLocalTranslation());
-		tempTransform = toDoubleArray(translation.get(vals));
 		
-		planeP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, new float[]{0,1,0}, 0.0f);
-		planeP.setBounciness(1.0f);
-		plane.setPhysicsObject(planeP);
+		
+		
 		//engine.enableGraphicsWorldRender();
 		//engine.enablePhysicsWorldRender();
 
@@ -379,7 +397,7 @@ public class MyGame extends VariableFrameRateGame
 		String elapsTimeStr = Integer.toString(elapsTimeSec);
 		String counterStr = Integer.toString(counter);
 		String dispStr1 = "Time = " + elapsTimeStr;
-		String dispStr2 = "Virus Count = " + counterStr;
+		String dispStr2 = "Hit the pill bottle!" + counterStr;
 		// String dispStr2 = "camera position = "
 		// 	+ (c.getLocation()).x()
 		// 	+ ", " + (c.getLocation()).y()
@@ -425,9 +443,10 @@ public class MyGame extends VariableFrameRateGame
 		collisionSound.setLocation(pillBottle.getWorldLocation());
 		setEarParameters();
 
-		if(counter > 10) {
+		if (gameOver) {
 			backgroundMusic.stop();
-			(engine.getHUDmanager()).setHUD1("You lose! Too many viruses spawned.", hud1Color, 50, 200);
+			endGame();
+			// setGameOver(false);
 		}
 	}
 
@@ -482,12 +501,8 @@ public class MyGame extends VariableFrameRateGame
 			}
 			case KeyEvent.VK_F:
 			{
-				// if(!avatarRendered){
-				// 	avatar2.getRenderStates().enableRendering();
-				// 	avatarRendered = true;
-				// 	orbitController.setAvatar(avatar2);
-				// 	avatar = avatar2;
-				// }
+				setGameOver(true);
+				protClient.sendGameStateMessage();
 				break;
 			}
 			case KeyEvent.VK_P:
@@ -669,4 +684,11 @@ public class MyGame extends VariableFrameRateGame
 
 		public ObjShape getNPCshape() { return avatar2S; }
 		public TextureImage getNPCtexture() { return virusTex; }
+		public boolean getGameOver() { return gameOver; }
+		public void setGameOver(boolean value) { gameOver = value; }
+		public void endGame() { 
+			String dispStr = "Game Over";
+			Vector3f hudColor = new Vector3f(1,0,0);
+			(engine.getHUDmanager()).setHUD2(dispStr, hudColor, 500, 15);
+		}
 }

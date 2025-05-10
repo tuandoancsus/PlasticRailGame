@@ -165,7 +165,18 @@ public class ProtocolClient extends GameConnectionClient
                     sendIsNearMessage();
                 }
             }
-}	
+
+			if (messageTokens[0].compareTo("gameState") == 0) {
+                if (game.getGameOver()) {
+					System.out.println("game over");
+					game.endGame();
+				}
+            }
+
+			if (messageTokens[0].compareTo("gameStart") == 0) {
+				System.out.println("game start");
+            }
+	}	
 }
 	
 	// The initial message from the game client requesting to join the 
@@ -263,6 +274,25 @@ public class ProtocolClient extends GameConnectionClient
 
 	private final Map<Integer, GhostNPC> ghostNPCs = new HashMap<>();
 	private final Random idRng = new Random();
+
+	// ------------- GAME STATE SECTION --------------
+	public void sendGameStateMessage() {
+		try {
+			String message = new String("gameState," + id.toString());
+			sendPacket(message);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void sendGameStartMessage() {
+		try {
+			String message = new String("gameStart," + id.toString());
+			sendPacket(message);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	// ------------- GHOST NPC SECTION --------------
 	private void createGhostNPC(Vector3f position) throws IOException { 
