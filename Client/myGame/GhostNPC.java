@@ -5,10 +5,10 @@ import org.joml.*;
 
 public class GhostNPC extends GameObject{
     private int id;
-    public GhostNPC(int id, ObjShape s, TextureImage t, Vector3f p)
-        { super(GameObject.root(), s, t);
-            this.id = id;
-            setPosition(p);
+    public GhostNPC(int id, ObjShape s, TextureImage t, Vector3f p) { 
+        super(GameObject.root(), s, t);
+        this.id = id;
+        setPosition(p);
     }
 
     public void setSize(boolean big) {

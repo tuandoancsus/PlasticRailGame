@@ -5,10 +5,6 @@ import java.util.Queue;
 import java.lang.Math;
 
 import tage.*;
-import tage.shapes.*;
-import tage.input.*;
-import tage.input.action.*;
-import tage.audio.*;
 
 import org.joml.*;
 
