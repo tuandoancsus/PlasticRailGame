@@ -11,6 +11,7 @@ public class NPCcontroller {
     Random rn = new Random();
     BehaviorTree bt = new BehaviorTree(BTCompositeType.SELECTOR);
     boolean nearFlag = false;
+    boolean gameStart = false;
     long thinkStartTime, tickStartTime;
     long lastThinkUpdateTime, lastTickUpdateTime;
     GameAIServerUDP server;
@@ -72,6 +73,14 @@ public class NPCcontroller {
 
     public void setNearFlag(boolean flag) {
         this.nearFlag = flag;
+    }
+
+    public void setGameStartFlag(boolean flag) {
+        this.gameStart = flag;
+    }
+
+    public boolean getGameStartFlag() {
+        return gameStart;
     }
 
     public boolean getNearFlag() {

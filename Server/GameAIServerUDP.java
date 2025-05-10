@@ -100,6 +100,22 @@ public class GameAIServerUDP extends GameConnectionServer<UUID> {
             { UUID clientID = UUID.fromString(messageTokens[1]);
                 handleNearTiming(clientID);
             }
+
+			// Case where server receives game state
+            // Received Message Format: (gameState,id)
+            if(messageTokens[0].compareTo("gameState") == 0)
+            { System.out.println("server got a gameState message");
+                UUID clientID = UUID.fromString(messageTokens[1]);
+                sendGameState(clientID);
+            }
+
+			// Case where server receives game start
+            // Received Message Format: (gameStart,id)
+            if(messageTokens[0].compareTo("gameStart") == 0)
+            { System.out.println("server got a gameStart message");
+                UUID clientID = UUID.fromString(messageTokens[1]);
+                sendGameStart(clientID);
+            }
         }   
     }
 
@@ -217,6 +233,28 @@ public class GameAIServerUDP extends GameConnectionServer<UUID> {
 		}
 	}
 
+	// Informs clients that game state has changed.
+	public void sendGameState(UUID clientID) {
+		try {
+			String message = new String("gameState," + clientID.toString());
+			forwardPacketToAll(message, clientID);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	// Informs clients that game start has changed.
+	public void sendGameStart(UUID clientID) {
+		try {
+			NPC npc = npcCtrl.getNPC();
+			String message = new String("gameStart," + clientID.toString());
+			setAvatarWaving();
+			forwardPacketToAll(message, clientID);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
     
     // --- additional protocol for NPCs ----
     public void sendCheckForAvatarNear() {
@@ -279,5 +317,9 @@ public class GameAIServerUDP extends GameConnectionServer<UUID> {
 
 	public Vector3f getAvatarPos() {
 		return avatarPos;
+	}
+
+	public void setAvatarWaving() {
+		npcCtrl.getNPC().setWaveAction();
 	}
 }

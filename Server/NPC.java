@@ -4,6 +4,7 @@ public class NPC {
     double locationX, locationY, locationZ;
     double dir = 0.1;
     double size = 1.0;
+    boolean waving = false;
 
     public NPC() { 
         locationX=0.0;
@@ -33,5 +34,9 @@ public class NPC {
         locationX = x;
         locationY = y;
         locationZ = z;
+    }
+    public void setWaveAction() { 
+        System.out.println("Waving");
+        waving = !waving;
     }
 }
