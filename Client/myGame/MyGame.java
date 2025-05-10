@@ -145,7 +145,7 @@ public class MyGame extends VariableFrameRateGame
 		//resource3 = audioManager.createAudioResource("soundEffect2.wav", AudioResourceType.AUDIO_SAMPLE);
 
 		backgroundMusic = new Sound(resource1, SoundType.SOUND_MUSIC, 5, true);
-		collisionSound = new Sound(resource2, SoundType.SOUND_EFFECT, 100, true);
+		collisionSound = new Sound(resource2, SoundType.SOUND_EFFECT, 100, false);
 		// soundEffect2 = new Sound(resource3, SoundType.SOUND_EFFECT, 100, false);
 
 		backgroundMusic.initialize(audioManager);
@@ -211,7 +211,7 @@ public class MyGame extends VariableFrameRateGame
 		
 		pill = new GameObject(GameObject.root(), pillS, pillT);
 		pill.setLocalTranslation(new Matrix4f().translation(10, 0, 8)); 
-		double[] tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
+		tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
 		pill.setLocalScale(new Matrix4f().scaling(0.5f));
 
 		
@@ -233,11 +233,6 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f terrainScale = new Vector3f();
 		terrainScaleMatrix.getScale(terrainScale);
 
-		//Vector3f terrainPos = terr.getWorldLocation();
-		// plane = new GameObject(GameObject.root(), planeS, grass);
-		// plane.setLocalTranslation(new Matrix4f().translation(terrainPos.x(), terrainPos.y(), terrainPos.z()));
-		// plane.setLocalScale(new Matrix4f().scaling(terrainScale));
-
 		Matrix4f translation = new Matrix4f(terr.getLocalTranslation());
 		tempTransform = toDoubleArray(translation.get(vals));
 		planeP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, new float[]{0,1,0}, 0.0f);
@@ -251,13 +246,6 @@ public class MyGame extends VariableFrameRateGame
 		// (x.getRenderStates()).setColor(new Vector3f(1f,0f,0f));
 		// (y.getRenderStates()).setColor(new Vector3f(0f,1f,0f));
 		// (z.getRenderStates()).setColor(new Vector3f(0f,0f,1f));
-
-		virusRoot = new GameObject(GameObject.root());
-		viruses = new VirusFactory(avatar2S, virusTex, virusRoot);
-
-		engine.enableGraphicsWorldRender();
-		engine.enablePhysicsWorldRender();
-		
 	}
 
 	static float randf(float min, float max) {
@@ -332,7 +320,6 @@ public class MyGame extends VariableFrameRateGame
 		collisionSound.setLocation(pillBottle.getWorldLocation());
 		setEarParameters();
 		backgroundMusic.play();
-		collisionSound.play();
 
 
 		// ----------------- INPUTS SECTION -----------------------------
@@ -508,6 +495,7 @@ public class MyGame extends VariableFrameRateGame
 			redSpotlight.disable();
 			greenSpotlight.enable();
 			switchedLights = true;
+		}
 		// Sounds
 		backgroundMusic.setLocation(avatar.getWorldLocation());
 		collisionSound.setLocation(pillBottle.getWorldLocation());
@@ -557,16 +545,6 @@ public class MyGame extends VariableFrameRateGame
 				}
 				case KeyEvent.VK_3:
 				{ (engine.getSceneGraph()).setSkyBoxEnabled(false);
-				break;
-			}
-			case KeyEvent.VK_E:
-			{
-				// spawn random viruses
-				// Vector3f p = new Vector3f(randf(-10,10), 0, randf(-10,10));
-				// viruses.spawn(p, 0.5f, randf(0,360));
-				// System.out.println("spawning virus at " + p.x() + ", " + p.y() + ", " + p.z());
-				protClient.sendNeedNPCMessage();
-				counter++;
 				break;
 			}
 			case KeyEvent.VK_F:
@@ -675,7 +653,7 @@ public class MyGame extends VariableFrameRateGame
        			System.out.println("Score! Pill hit the pill bottle!");
 				score++;
 		        System.out.println("Current Score: " + score);
-
+				collisionSound.play();
     		}
 			break;
 
@@ -762,13 +740,13 @@ private void tossPillForward() {
 		
 	}	
 
-		public ObjShape getNPCshape() { return avatar2S; }
-		public TextureImage getNPCtexture() { return virusTex; }
-		public boolean getGameOver() { return gameOver; }
-		public void setGameOver(boolean value) { gameOver = value; }
-		public void endGame() { 
-			String dispStr = "Game Over";
-			Vector3f hudColor = new Vector3f(1,0,0);
-			(engine.getHUDmanager()).setHUD2(dispStr, hudColor, 500, 15);
-		}
+	public ObjShape getNPCshape() { return avatar2S; }
+	public TextureImage getNPCtexture() { return virusTex; }
+	public boolean getGameOver() { return gameOver; }
+	public void setGameOver(boolean value) { gameOver = value; }
+	public void endGame() { 
+		String dispStr = "Game Over";
+		Vector3f hudColor = new Vector3f(1,0,0);
+		(engine.getHUDmanager()).setHUD2(dispStr, hudColor, 500, 15);
+	}
 }
