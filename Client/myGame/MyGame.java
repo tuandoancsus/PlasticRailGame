@@ -31,12 +31,20 @@ import tage.physics.JBullet.JBulletPhysicsEngine;
 import tage.physics.JBullet.JBulletPhysicsObject;
 
 public class MyGame extends VariableFrameRateGame
-{
+{	
+	//score
+	private int score = 0;
+	//lights
+	private Light blueSpotlight, greenSpotlight, redSpotlight;
+	private boolean switchedLights = false;
+
 	//physic
 	private PhysicsEngine physicsEngine;
 	private PhysicsObject planeP;
 	private boolean running = false;
 	private float vals[] = new float[16];
+	private boolean pillStoppedBouncing = false;
+
 
 	//pill
 	private boolean bottleHeld = false;
@@ -53,11 +61,11 @@ public class MyGame extends VariableFrameRateGame
 	private Matrix4f initialTranslation, initialRotation, initialScale;
 	private double startTime, prevTime, elapsedTime, amt;
 
-	private GameObject avatar, x, y, z, pillBottle, terr, plane,pill, virusRoot;
+	private GameObject avatar, avatar2, x, y, z, pillBottle, terr, plane,pill, virusRoot;
 	private AnimatedShape avatarS;
 	private ObjShape avatar2S, virusS, ghostS, linxS, linyS, linzS, pillBottleS, terrS, planeS, pillS;
 	private VirusFactory viruses;
-	private TextureImage avatarT, virusTex, ghostT, hills, grass, floor, pillT;
+	private TextureImage avatarT, avatar2T, virusTex, ghostT, hills, grass, floor, pillT;
 
 	private int background; // skyboxes
 	private boolean avatarRendered = false;
@@ -123,7 +131,7 @@ public class MyGame extends VariableFrameRateGame
 		pillT = new TextureImage("pillbottle.png");
 
 
-		hills = new TextureImage("hills.jpg");
+		hills = new TextureImage("hills2.png");
 		floor = new TextureImage("floor.jpg");
 	}
 
@@ -180,19 +188,19 @@ public class MyGame extends VariableFrameRateGame
 		//avatar.getRenderStates().disableRendering();
 		//avatar.getRenderStates().setModelOrientationCorrection((new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f)));
 
-		// avatar2 = new GameObject(GameObject.root(), avatar2S, avatar2T);
-		// initialTranslation = (new Matrix4f()).translation(-1f,2,1f);
-		// avatar2.setLocalTranslation(initialTranslation);
-		// initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
-		// initialScale = (new Matrix4f()).scaling(0.25f);
-		// avatar2.setLocalScale(initialScale);
-		// avatar2.setLocalRotation(initialRotation);
-		// avatar2.getRenderStates().disableRendering();
+		avatar2 = new GameObject(GameObject.root(), avatar2S, avatar2T);
+		initialTranslation = (new Matrix4f()).translation(-1f,2,12f);
+		avatar2.setLocalTranslation(initialTranslation);
+		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
+		initialScale = (new Matrix4f()).scaling(0.25f);
+		avatar2.setLocalScale(initialScale);
+		avatar2.setLocalRotation(initialRotation);
+		avatar2.getRenderStates().disableRendering();
 
 
 		// build Pill Bottle building
 		pillBottle = new GameObject(GameObject.root(), pillBottleS, pillT);
-		initialTranslation = (new Matrix4f()).translation(-1f,2,10); // Original is 10,0,-10
+		initialTranslation = (new Matrix4f()).translation(10,0,0);
 		pillBottle.setLocalTranslation(initialTranslation);
 		initialScale = (new Matrix4f()).scaling(1.0f);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(360.0f));
@@ -202,15 +210,13 @@ public class MyGame extends VariableFrameRateGame
 		
 		
 		pill = new GameObject(GameObject.root(), pillS, pillT);
-		pill.setLocalTranslation(new Matrix4f().translation(10, 5, -10)); 
-		//double[] tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
+		pill.setLocalTranslation(new Matrix4f().translation(10, 0, 8)); 
+		double[] tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
 		pill.setLocalScale(new Matrix4f().scaling(0.5f));
 
-		tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
-		pillP = (engine.getSceneGraph()).addPhysicsSphere(1.0f, tempTransform, radius);
-		pillP.setBounciness(0.2f);
-		pill.setPhysicsObject(pillP);
+		
 
+		
 		// build terrain
 		terr = new GameObject(GameObject.root(), terrS, floor);
 		initialTranslation = (new Matrix4f()).translation(0f,0f,0f);
@@ -296,13 +302,30 @@ public class MyGame extends VariableFrameRateGame
 		float height = 2.0f;
 		double[ ] tempTransform;
 
-		
+		Matrix4f pillTransform = pill.getLocalTranslation();
+		Matrix4f bottleTransform = pillBottle.getLocalTranslation();
+
+		tempTransform = toDoubleArray(pillTransform.get(vals));
 		
 		
 		//engine.enableGraphicsWorldRender();
 		//engine.enablePhysicsWorldRender();
 
 		running = true;
+
+		int uid = physicsEngine.nextUID();
+		pillP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 1.0f); // dynamic
+		pillP.setBounciness(0.95f); // nearly elastic collision
+		pill.setPhysicsObject(pillP);
+
+		// Apply initial upward velocity
+		pillP.setLinearVelocity(new float[]{0f, 2f, 0f}); 
+
+		double[] bottleTransformVals = toDoubleArray(bottleTransform.get(vals));
+		int bottleUID = physicsEngine.nextUID();
+		bottleP = physicsEngine.addBoxObject(bottleUID, 0f, bottleTransformVals, new float[]{1f, 5f, 1f});
+		bottleP.setBounciness(0.3f); // optional, allows slight bounce
+		pillBottle.setPhysicsObject(bottleP);
 
 		// ----------------- SOUNDS SECTION ----------------
 		backgroundMusic.setLocation(avatar.getWorldLocation());
@@ -341,31 +364,66 @@ public class MyGame extends VariableFrameRateGame
 		 	turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 			
 
-		im.associateActionWithAllGamepads(
-			net.java.games.input.Component.Identifier.Button._2,
-			new AbstractInputAction() {
-				public void performAction(float time, net.java.games.input.Event evt) {
-					if (!bottleHeld && isCloseTo(avatar, pillBottle, 5f)) {
-						attachBottleToAvatar();
-					} else if (bottleHeld) {
-						detachAndDropBottle();
-					}
-				}
-			},
-			InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+			 im.associateActionWithAllGamepads(
+					net.java.games.input.Component.Identifier.Button._2,
+					new AbstractInputAction() {
+						public void performAction(float time, net.java.games.input.Event evt) {
+							if (!bottleHeld && isCloseTo(avatar, pill, 3f) && isCloseTo(avatar, pill, 3f)) {
+								attachPillToAvatar();
+							} else if (bottleHeld) {
+								detachAndDropPill();
+							}
+						}
+					},
+					InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 
-		im.associateActionWithAllGamepads(
-			net.java.games.input.Component.Identifier.Button._3,
-			new AbstractInputAction() {
-				public void performAction(float time, net.java.games.input.Event evt) {
-					if (bottleHeld) {
-						tossBottleForward();
-					}
-				}
-			},
-			InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+				im.associateActionWithAllGamepads(
+					net.java.games.input.Component.Identifier.Button._3,
+					new AbstractInputAction() {
+						public void performAction(float time, net.java.games.input.Event evt) {
+							if (bottleHeld) {
+								tossPillForward();
+							}
+						}
+					},
+					InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+					
+				// Red spotlight
+		redSpotlight = new Light();
+		redSpotlight.setType(Light.LightType.SPOTLIGHT);
+		redSpotlight.setLocation(new Vector3f(10f, 5f, 8f)); 
+		redSpotlight.setDirection(new Vector3f(0f, -1f, 0f)); // shine downward
+		redSpotlight.setCutoffAngle(30f);
+		redSpotlight.setDiffuse(1f, 0f, 0f);  // Red
+		redSpotlight.setAmbient(0.3f, 0f, 0f);
+		redSpotlight.setSpecular(1f, 0.2f, 0.2f);
+		engine.getSceneGraph().addLight(redSpotlight);
+
+			// Blue spotlight 
+		blueSpotlight = new Light();
+		blueSpotlight.setType(Light.LightType.SPOTLIGHT);
+		blueSpotlight.setLocation(new Vector3f(10f, 5f, -8f)); // above pill
+		blueSpotlight.setDirection(new Vector3f(0f, -1f, 0f));  // point downward
+		blueSpotlight.setCutoffAngle(30f);
+		blueSpotlight.setDiffuse(1f, 0f,0f);  // Blue
+		blueSpotlight.setAmbient(0f, 0f, 0.5f);
+		blueSpotlight.setSpecular(0.5f, 0.5f, 1f);
+		engine.getSceneGraph().addLight(blueSpotlight);
+
+		// Green spotlight on pill bottle
+		greenSpotlight = new Light();
+		greenSpotlight.setType(Light.LightType.SPOTLIGHT);
+		greenSpotlight.setLocation(new Vector3f(10f, 10f, 0f)); // above pill bottle
+		greenSpotlight.setDirection(new Vector3f(0f, -1f, 0f)); // point downward
+		greenSpotlight.setCutoffAngle(30f);
+		greenSpotlight.setDiffuse(0.6f, 0f, 0.8f);  // Purple tint (mix of red + blue)
+		greenSpotlight.setAmbient(0.3f, 0f, 0.4f);  // Slight ambient purple
+		greenSpotlight.setSpecular(0.8f, 0.3f, 1f); // Shiny purple highlight
 				
-	}
+		greenSpotlight.disable(); // Start off
+		engine.getSceneGraph().addLight(greenSpotlight);
+
+			}
 	
 
 	public GameObject getAvatar() { return avatar; }
@@ -385,7 +443,7 @@ public class MyGame extends VariableFrameRateGame
 	{	elapsedTime = System.currentTimeMillis() - prevTime;
 		prevTime = System.currentTimeMillis();
 		amt = elapsedTime * 0.03;
-		//Camera c = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
+		Camera c = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
 
 		Vector3f loc = avatar.getWorldLocation();
 		float height = terr.getHeight(loc.x(), loc.z());
@@ -396,12 +454,17 @@ public class MyGame extends VariableFrameRateGame
 		int elapsTimeSec = Math.round((float)(System.currentTimeMillis()-startTime)/1000.0f);
 		String elapsTimeStr = Integer.toString(elapsTimeSec);
 		String counterStr = Integer.toString(counter);
-		String dispStr1 = "Time = " + elapsTimeStr;
-		String dispStr2 = "Hit the pill bottle!" + counterStr;
-		// String dispStr2 = "camera position = "
-		// 	+ (c.getLocation()).x()
-		// 	+ ", " + (c.getLocation()).y()
-		// 	+ ", " + (c.getLocation()).z();
+		String dispStr1 = "Time = " + elapsTimeStr + " | Score = " + score;
+		if (bottleHeld) {
+			dispStr1 += " | Pill in hand";
+		} else {
+			dispStr1 += " | Pill on ground";
+		}
+
+		String dispStr2 = "camera position = "
+			+ (c.getLocation()).x()
+			+ ", " + (c.getLocation()).y()
+			+ ", " + (c.getLocation()).z();
 		Vector3f hud1Color = new Vector3f(1,0,0);
 		Vector3f hud2Color = new Vector3f(1,1,1);
 		(engine.getHUDmanager()).setHUD1(dispStr1, hud1Color, 15, 15);
@@ -438,6 +501,13 @@ public class MyGame extends VariableFrameRateGame
 		orbitController.updateCameraPosition();
 		processNetworking((float)elapsedTime);
 
+	
+
+		if (!switchedLights && (System.currentTimeMillis() - startTime) > 20000) {
+			blueSpotlight.disable();
+			redSpotlight.disable();
+			greenSpotlight.enable();
+			switchedLights = true;
 		// Sounds
 		backgroundMusic.setLocation(avatar.getWorldLocation());
 		collisionSound.setLocation(pillBottle.getWorldLocation());
@@ -587,100 +657,110 @@ public class MyGame extends VariableFrameRateGame
 		com.bulletphysics.dynamics.RigidBody object1, object2;
 		com.bulletphysics.collision.narrowphase.ManifoldPoint contactPoint;
 
-		dynamicsWorld = ((JBulletPhysicsEngine)physicsEngine).getDynamicsWorld();
-		dispatcher = dynamicsWorld.getDispatcher();
-		int manifoldCount = dispatcher.getNumManifolds();
-		for (int i=0; i < manifoldCount; i++)
-		{	manifold = dispatcher.getManifoldByIndexInternal(i);
-			object1 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody0();
-			object2 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody1();
-			JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
-			JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
-			for (int j = 0; j < manifold.getNumContacts(); j++)
-			{	contactPoint = manifold.getContactPoint(j);
-				if (contactPoint.getDistance() < 0.0f)
-				{	System.out.println("---- hit between " + obj1 + " and " + obj2);
-					break;
-				}
+	dynamicsWorld = ((JBulletPhysicsEngine)physicsEngine).getDynamicsWorld();
+	dispatcher = dynamicsWorld.getDispatcher();
+	int manifoldCount = dispatcher.getNumManifolds();
+	for (int i=0; i < manifoldCount; i++)
+	{	manifold = dispatcher.getManifoldByIndexInternal(i);
+		object1 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody0();
+		object2 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody1();
+		JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
+		JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
+		for (int j = 0; j < manifold.getNumContacts(); j++)
+		{	contactPoint = manifold.getContactPoint(j);
+			if (contactPoint.getDistance() < 0.0f)
+			{	System.out.println("---- hit between " + obj1 + " and " + obj2);
+
+			if ((obj1 == pillP && obj2 == bottleP) || (obj1 == bottleP && obj2 == pillP)) {
+       			System.out.println("Score! Pill hit the pill bottle!");
+				score++;
+		        System.out.println("Current Score: " + score);
+
+    		}
+			break;
+
 			}
 		}
 	}
-	
-	private boolean isCloseTo(GameObject a, GameObject b, float distance) {
-		return a.getWorldLocation().distance(b.getWorldLocation()) < distance;
-	}
+}
+private boolean isCloseTo(GameObject a, GameObject b, float distance) {
+    Vector3f posA = a.getWorldLocation();
+    Vector3f posB = b.getWorldLocation();
+    Vector2f a2D = new Vector2f(posA.x(), posA.z());
+    Vector2f b2D = new Vector2f(posB.x(), posB.z());
+    return a2D.distance(b2D) < distance;
+}
 
-	private void attachBottleToAvatar() {
-		pillBottle.setParent(avatar);
-		pillBottle.setLocalTranslation(new Matrix4f().translation(0.0f, 0.0f, 0.5f));
-		pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
+private void attachPillToAvatar() {
+    pill.setParent(avatar);
+    pill.setLocalTranslation(new Matrix4f().translation(0.0f, 0.0f, 0.5f));
+    pill.setLocalScale(new Matrix4f().scaling(0.5f));
 
-		pillBottle.propagateRotation(true);
-		pillBottle.propagateTranslation(true);
-		pillBottle.applyParentRotationToPosition(true);
+    pill.propagateRotation(true);
+    pill.propagateTranslation(true);
+    pill.applyParentRotationToPosition(true);
 
-		if (bottleP != null) {
-			physicsEngine.removeObject(bottleP.getUID());
-			pillBottle.setPhysicsObject(null);
-			bottleP = null;
-		}
+    if (pillP != null) {
+        physicsEngine.removeObject(pillP.getUID());
+        pill.setPhysicsObject(null);
+        pillP = null;
+    }
 
-		bottleHeld = true;
-		System.out.println("Picked up pill bottle");
-	}
+    bottleHeld = true;
+    System.out.println("Picked up pill");
+}
 
-	private void detachAndDropBottle() {
-		pillBottle.setParent(GameObject.root());
+private void detachAndDropPill() {
+    pill.setParent(GameObject.root());
 
 		Vector3f avatarPos = avatar.getWorldLocation();
 		Vector3f dropPos = new Vector3f(avatarPos.x(), avatarPos.y() + 1.0f, avatarPos.z());
 
-		pillBottle.setLocalTranslation(new Matrix4f().translation(dropPos));
-		pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
+    pill.setLocalTranslation(new Matrix4f().translation(dropPos));
+    pill.setLocalScale(new Matrix4f().scaling(0.5f));
 
-		double[] tempTransform = toDoubleArray(pillBottle.getLocalTranslation().get(vals));
-		int uid = physicsEngine.nextUID();
-		bottleP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
-		bottleP.setBounciness(0.8f);
-		pillBottle.setPhysicsObject(bottleP);
+    double[] tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
+    int uid = physicsEngine.nextUID();
+    pillP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
+    pillP.setBounciness(0.8f);
+    pill.setPhysicsObject(pillP);
+
+    bottleHeld = false;
+    System.out.println("Dropped pill");
+}
+
+private void tossPillForward() {
+    Vector3f worldPos = pill.getWorldLocation();
+    Vector4f direction = new Vector4f(0f, 0f, 1f, 1f).mul(avatar.getWorldRotation());
+    Vector3f tossDir = new Vector3f(direction.x(), direction.y(), direction.z()).normalize().add(0f, 0.3f, 0f);
+
+    pill.setParent(GameObject.root());
+    Vector3f startPos = new Vector3f(worldPos).add(tossDir.mul(1.0f));
+    pill.setLocalTranslation(new Matrix4f().translation(startPos));
+    pill.setLocalScale(new Matrix4f().scaling(0.5f));
+
+    if (pillP != null) {
+        physicsEngine.removeObject(pillP.getUID());
+    }
+
+    double[] tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
+    int uid = physicsEngine.nextUID();
+    pillP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
+    pillP.setBounciness(0.8f);
+    pill.setPhysicsObject(pillP);
+
+    float force = 700.0f;
+    pillP.applyForce(
+        tossDir.x() * force,
+        tossDir.y() * force,
+        tossDir.z() * force,
+        0f, 0f, 0f
+    );
 
 		bottleHeld = false;
-		System.out.println("Dropped pill bottle");
-	}
-
-	private void tossBottleForward() {
-		Vector3f worldPos = pillBottle.getWorldLocation();
-		Vector4f direction = new Vector4f(0f, 0f, 1f, 1f).mul(avatar.getWorldRotation());
-		Vector3f tossDir = new Vector3f(direction.x(), direction.y(), direction.z()).normalize().add(0f, 0.3f, 0f);
-
-		pillBottle.setParent(GameObject.root());
-		Vector3f startPos = new Vector3f(worldPos).add(tossDir.mul(1.0f)); // offset by 1 unit forward
-		pillBottle.setLocalTranslation(new Matrix4f().translation(startPos));
-		pillBottle.setLocalScale(new Matrix4f().scaling(0.5f));
-
-		if (bottleP != null) {
-			physicsEngine.removeObject(bottleP.getUID());
-		}
-
-		double[] tempTransform = toDoubleArray(pillBottle.getLocalTranslation().get(vals));
-		int uid = physicsEngine.nextUID();
-		bottleP = physicsEngine.addSphereObject(uid, 1.0f, tempTransform, 0.8f);
-		bottleP.setBounciness(0.8f);
-		pillBottle.setPhysicsObject(bottleP);
-
-		float force = 555.0f; // same as tossForce
-		bottleP.applyForce(
-			tossDir.x() * force,
-			tossDir.y() * force,
-			tossDir.z() * force,
-			0f, 0f, 0f
-		);
-
-		bottleHeld = false;
-		System.out.println("Pill bottle tossed");
+		System.out.println("Pill tossed");
 		
 	}	
-		
 
 		public ObjShape getNPCshape() { return avatar2S; }
 		public TextureImage getNPCtexture() { return virusTex; }
