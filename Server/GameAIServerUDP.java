@@ -94,28 +94,28 @@ public class GameAIServerUDP extends GameConnectionServer<UUID> {
                 UUID clientID = UUID.fromString(messageTokens[1]);
                 sendNPCstart(clientID);
             }
-            // Case where server receives notice that an av is close to the npc
-            // Received Message Format: (isnear,id)
-            if(messageTokens[0].compareTo("isnear") == 0)
-            { UUID clientID = UUID.fromString(messageTokens[1]);
-                handleNearTiming(clientID);
-            }
+            // // Case where server receives notice that an av is close to the npc
+            // // Received Message Format: (isnear,id)
+            // if(messageTokens[0].compareTo("isnear") == 0)
+            // { UUID clientID = UUID.fromString(messageTokens[1]);
+            //     handleNearTiming(clientID);
+            // }
 
-			// Case where server receives game state
-            // Received Message Format: (gameState,id)
-            if(messageTokens[0].compareTo("gameState") == 0)
-            { System.out.println("server got a gameState message");
-                UUID clientID = UUID.fromString(messageTokens[1]);
-                sendGameState(clientID);
-            }
+			// // Case where server receives game state
+            // // Received Message Format: (gameState,id)
+            // if(messageTokens[0].compareTo("gameState") == 0)
+            // { System.out.println("server got a gameState message");
+            //     UUID clientID = UUID.fromString(messageTokens[1]);
+            //     sendGameState(clientID);
+            // }
 
-			// Case where server receives game start
-            // Received Message Format: (gameStart,id)
-            if(messageTokens[0].compareTo("gameStart") == 0)
-            { System.out.println("server got a gameStart message");
-                UUID clientID = UUID.fromString(messageTokens[1]);
-                sendGameStart(clientID);
-            }
+			// // Case where server receives game start
+            // // Received Message Format: (gameStart,id)
+            // if(messageTokens[0].compareTo("gameStart") == 0)
+            // { System.out.println("server got a gameStart message");
+            //     UUID clientID = UUID.fromString(messageTokens[1]);
+            //     sendGameStart(clientID);
+            // }
         }   
     }
 
@@ -248,7 +248,7 @@ public class GameAIServerUDP extends GameConnectionServer<UUID> {
 		try {
 			NPC npc = npcCtrl.getNPC();
 			String message = new String("gameStart," + clientID.toString());
-			setAvatarWaving();
+			//setAvatarWaving();
 			forwardPacketToAll(message, clientID);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -279,6 +279,7 @@ public class GameAIServerUDP extends GameConnectionServer<UUID> {
             message += "," + npc.getY();
             message += "," + npc.getZ();
             message += "," + npc.getSize();
+			message += "," + npc.getWaving();
             sendPacketToAll(message);
         } catch (IOException e) {
             e.printStackTrace();
@@ -286,8 +287,8 @@ public class GameAIServerUDP extends GameConnectionServer<UUID> {
     }
 
     public void sendNPCstart(UUID clientID) {
-        System.out.println("server telling clients about an NPC");
-        NPC npc = npcCtrl.getNPC();
+        System.out.println("server telling clients about an NPC, grabs npc");
+		NPC npc = npcCtrl.getNPC();
         String[] position = {
             String.valueOf(npc.getX()),
             String.valueOf(npc.getY()),

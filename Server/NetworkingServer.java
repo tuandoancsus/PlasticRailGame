@@ -45,6 +45,7 @@ public class NetworkingServer
 			System.out.println("server didn't start"); 
 			e.printStackTrace(); 
 		}
+		System.out.println("Server started on port: " + serverPort);
 		npcCtrl.start(UDPServer);
 	}
 

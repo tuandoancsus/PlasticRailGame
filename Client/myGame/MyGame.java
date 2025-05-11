@@ -62,7 +62,7 @@ public class MyGame extends VariableFrameRateGame
 	private double startTime, prevTime, elapsedTime, amt;
 
 	private GameObject avatar, avatar2, x, y, z, pillBottle, terr, plane,pill, virusRoot;
-	private AnimatedShape avatarS;
+	private AnimatedShape avatarS, ghostNPCS;
 	private ObjShape avatar2S, virusS, ghostS, linxS, linyS, linzS, pillBottleS, terrS, planeS, pillS;
 	private VirusFactory viruses;
 	private TextureImage avatarT, avatar2T, virusTex, ghostT, hills, grass, floor, pillT;
@@ -104,11 +104,14 @@ public class MyGame extends VariableFrameRateGame
 	{
 		ghostS = new ImportedModel("dolphinHighPoly.obj");
 		avatarS = new AnimatedShape("test2.rkm", "test2.rks");
+		ghostNPCS = new AnimatedShape("test2.rkm", "test2.rks");
+	    ghostNPCS.loadAnimation("WAVE","wave.rka");
 		avatarS.loadAnimation("WALK","walkModel.rka");
 		avatarS.loadAnimation("IDLE","idle.rka");
 		avatarS.loadAnimation("RUN","sprint.rka");
 		avatarS.loadAnimation("JUMP","jump3.rka");
-		avatarS.loadAnimation("WAVE","wave.rka");
+		//avatarS.loadAnimation("WAVE","wave.rka");
+
 
 		avatar2S = new ImportedModel("finalModel3.obj");
 		//virusS = new ImportedModel("avatar1.obj");
@@ -461,6 +464,7 @@ public class MyGame extends VariableFrameRateGame
 		(engine.getHUDmanager()).setHUD2(dispStr2, hud2Color, 500, 15);
 
 		avatarS.updateAnimation();
+		ghostNPCS.updateAnimation();
 
 		if (running) {
             AxisAngle4f aa = new AxisAngle4f();
@@ -567,9 +571,23 @@ public class MyGame extends VariableFrameRateGame
 // -------------------- NETWORKING SECTION --------------------
 
 	public ObjShape getGhostShape() { return ghostS; }
+	public AnimatedShape getAnimatedShape() { return ghostNPCS; }
 	public TextureImage getGhostTexture() { return ghostT; }
 	public GhostManager getGhostManager() { return gm; }
 	public Engine getEngine() { return engine; }
+	public GhostNPC ghostNPC;
+
+	public void npcWave() {
+		ghostNPC = protClient.getGhostNPC();
+		ghostNPCS.playAnimation("WAVE", 10f, AnimatedShape.EndType.LOOP, 0);
+		System.out.println("Waving over and over!");
+	}
+
+	public void npcStopWave() {
+		ghostNPC = protClient.getGhostNPC();
+		ghostNPCS.stopAnimation(); 
+		System.out.println("Stopped waving");
+	}
 	
 	private void setupNetworking()
 	{	isClientConnected = false;	

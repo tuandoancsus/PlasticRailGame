@@ -36,7 +36,7 @@ public class NPCcontroller {
 
     public void setupNPCs() { 
         npc = new NPC();
-        npc.randomizeLocation(rn.nextInt(40),rn.nextInt(40));
+        System.out.println("NPC created");
     }
 
     public void npcLoop() { 
@@ -60,14 +60,12 @@ public class NPCcontroller {
     }
 
     public void setupBehaviorTree() {
-        bt.insertAtRoot(new BTSequence(10));
-        bt.insertAtRoot(new BTSequence(20));
-        bt.insertAtRoot(new BTSequence(30));
-        bt.insert(10, new ChaseAvatarAction(server, this, npc));
-        bt.insert(20, new AvatarNear(server, this, npc, false));
-        bt.insert(20, new GetBig(npc));
-        bt.insert(30, new OneSecPassed(this, npc, true));
-        bt.insert(30, new GetSmall(npc));
+        // bt.insertAtRoot(new BTSequence(10));
+        // bt.insert(10, new GetWaving(npc));
+
+        // bt.insertAtRoot(new BTSequence(20));
+        // bt.insert(20, new NSecPassed(this, npc, false, 10)); 
+        // bt.insert(20, new StopWaving(npc));
     }
     
 
