@@ -108,11 +108,14 @@ public class MyGame extends VariableFrameRateGame
 		avatarS.loadAnimation("IDLE","idle.rka");
 		avatarS.loadAnimation("RUN","sprint.rka");
 		avatarS.loadAnimation("JUMP","jump3.rka");
+		avatarS.loadAnimation("WAVE","wave.rka");
 
 		avatar2S = new ImportedModel("finalModel3.obj");
 		//virusS = new ImportedModel("avatar1.obj");
 		pillBottleS = new ImportedModel("PillBottle.obj");
 		pillS = new Sphere();
+		pillS = new ImportedModel("pill.obj");
+
 		// linxS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
 		// linyS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,3f,0f));
 		// linzS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,0f,-3f));
@@ -176,13 +179,13 @@ public class MyGame extends VariableFrameRateGame
 		//avatar.getRenderStates().setModelOrientationCorrection((new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f)));
 
 		avatar = new GameObject(GameObject.root(), avatarS, avatarT);
-		initialTranslation = (new Matrix4f()).translation(-1f,2,1f);
+		initialTranslation = (new Matrix4f()).translation(10f, 0f, 8f);
 		avatar.setLocalTranslation(initialTranslation);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
 		initialScale = (new Matrix4f()).scaling(0.70f);
 		avatar.setLocalScale(initialScale);
 		avatar.setLocalRotation(initialRotation);
-		avatarS.playAnimation("IDLE", 0.1f, AnimatedShape.EndType.LOOP, 0);
+		avatarS.playAnimation("WAVE", 100f, AnimatedShape.EndType.LOOP, 0);
 
 
 		//avatar.getRenderStates().disableRendering();
@@ -210,7 +213,7 @@ public class MyGame extends VariableFrameRateGame
 		
 		
 		pill = new GameObject(GameObject.root(), pillS, pillT);
-		pill.setLocalTranslation(new Matrix4f().translation(10, 0, 8)); 
+		pill.setLocalTranslation(new Matrix4f().translation(-5, 0, 0)); 
 		tempTransform = toDoubleArray(pill.getLocalTranslation().get(vals));
 		pill.setLocalScale(new Matrix4f().scaling(0.5f));
 
@@ -381,7 +384,7 @@ public class MyGame extends VariableFrameRateGame
 		redSpotlight.setLocation(new Vector3f(10f, 5f, 8f)); 
 		redSpotlight.setDirection(new Vector3f(0f, -1f, 0f)); // shine downward
 		redSpotlight.setCutoffAngle(30f);
-		redSpotlight.setDiffuse(1f, 0f, 0f);  // Red
+		redSpotlight.setDiffuse(10f, 1f, 10f);  // Red
 		redSpotlight.setAmbient(0.3f, 0f, 0f);
 		redSpotlight.setSpecular(1f, 0.2f, 0.2f);
 		engine.getSceneGraph().addLight(redSpotlight);
