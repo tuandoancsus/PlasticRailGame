@@ -49,9 +49,11 @@ public void performAction(float time, Event e)
 		if (currentTime - lastForwardTime < 300) {
 			game.getAvatarShape().playAnimation("RUN", 0.7f, AnimatedShape.EndType.LOOP, 0);
 			isSprintingAnimationPlaying = true;
+			protClient.sendAvatarAnimation("RUN");
 		} else {
 			game.getAvatarShape().playAnimation("WALK", 0.5f, AnimatedShape.EndType.LOOP, 0);
 			isSprintingAnimationPlaying = false;
+			protClient.sendAvatarAnimation("WALK");
 		}
 		isRunningAnimationPlaying = true;
 	}

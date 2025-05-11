@@ -107,9 +107,9 @@ public class MyGame extends VariableFrameRateGame
 		ghostNPCS = new AnimatedShape("test2.rkm", "test2.rks");
 	    ghostNPCS.loadAnimation("WAVE","wave.rka");
 		avatarS.loadAnimation("WALK","walkModel.rka");
-		avatarS.loadAnimation("IDLE","idle.rka");
+		//avatarS.loadAnimation("IDLE","idle.rka");
 		avatarS.loadAnimation("RUN","sprint.rka");
-		avatarS.loadAnimation("JUMP","jump3.rka");
+		//avatarS.loadAnimation("JUMP","jump3.rka");
 		//avatarS.loadAnimation("WAVE","wave.rka");
 
 
@@ -339,12 +339,12 @@ public class MyGame extends VariableFrameRateGame
 		// build some action objects for doing things in response to user input
 		FwdAction fwdAction = new FwdAction(this, protClient);
 		TurnAction turnAction = new TurnAction(this, protClient);
-		JumpAction jumpAction = new JumpAction(this, protClient);
+		//JumpAction jumpAction = new JumpAction(this, protClient);
 
 		// attach the action objects to keyboard and gamepad components
-		im.associateActionWithAllGamepads(
-			net.java.games.input.Component.Identifier.Button._0,
-			jumpAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+		// im.associateActionWithAllGamepads(
+		// 	net.java.games.input.Component.Identifier.Button._0,
+		// 	jumpAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 		im.associateActionWithAllGamepads(
 			net.java.games.input.Component.Identifier.Button._1,
 			fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
@@ -454,10 +454,7 @@ public class MyGame extends VariableFrameRateGame
 			dispStr1 += " | Pill on ground";
 		}
 
-		String dispStr2 = "camera position = "
-			+ (c.getLocation()).x()
-			+ ", " + (c.getLocation()).y()
-			+ ", " + (c.getLocation()).z();
+		String dispStr2 = "Hit the pill bottle with the pill!";
 		Vector3f hud1Color = new Vector3f(1,0,0);
 		Vector3f hud2Color = new Vector3f(1,1,1);
 		(engine.getHUDmanager()).setHUD1(dispStr1, hud1Color, 15, 15);
@@ -572,7 +569,7 @@ public class MyGame extends VariableFrameRateGame
 
 	public ObjShape getGhostShape() { return ghostS; }
 	public AnimatedShape getAnimatedShape() { return ghostNPCS; }
-	public TextureImage getGhostTexture() { return ghostT; }
+	public TextureImage getGhostTexture() { return avatarT; }
 	public GhostManager getGhostManager() { return gm; }
 	public Engine getEngine() { return engine; }
 	public GhostNPC ghostNPC;
@@ -675,6 +672,7 @@ public class MyGame extends VariableFrameRateGame
 				score++;
 		        System.out.println("Current Score: " + score);
 				collisionSound.play();
+				gameOver = true;
     		}
 			break;
 
@@ -768,6 +766,6 @@ private void tossPillForward() {
 	public void endGame() { 
 		String dispStr = "Game Over";
 		Vector3f hudColor = new Vector3f(1,0,0);
-		(engine.getHUDmanager()).setHUD2(dispStr, hudColor, 500, 15);
+		(engine.getHUDmanager()).setHUD2(dispStr, hudColor, 500, 200);
 	}
 }

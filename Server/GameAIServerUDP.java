@@ -94,6 +94,12 @@ public class GameAIServerUDP extends GameConnectionServer<UUID> {
                 UUID clientID = UUID.fromString(messageTokens[1]);
                 sendNPCstart(clientID);
             }
+
+			if (messageTokens[0].equals("anim")) {
+				UUID senderID = UUID.fromString(messageTokens[1]);
+				String animName = messageTokens[2];
+				sendAvatarAnimationToOthers(senderID, animName);
+			}
             // // Case where server receives notice that an av is close to the npc
             // // Received Message Format: (isnear,id)
             // if(messageTokens[0].compareTo("isnear") == 0)
@@ -103,11 +109,11 @@ public class GameAIServerUDP extends GameConnectionServer<UUID> {
 
 			// // Case where server receives game state
             // // Received Message Format: (gameState,id)
-            // if(messageTokens[0].compareTo("gameState") == 0)
-            // { System.out.println("server got a gameState message");
-            //     UUID clientID = UUID.fromString(messageTokens[1]);
-            //     sendGameState(clientID);
-            // }
+            if(messageTokens[0].compareTo("gameState") == 0)
+            { System.out.println("server got a gameState message");
+                UUID clientID = UUID.fromString(messageTokens[1]);
+                sendGameState(clientID);
+            }
 
 			// // Case where server receives game start
             // // Received Message Format: (gameStart,id)
@@ -323,4 +329,14 @@ public class GameAIServerUDP extends GameConnectionServer<UUID> {
 	public void setAvatarWaving() {
 		npcCtrl.getNPC().setWaveAction();
 	}
+
+	public void sendAvatarAnimationToOthers(UUID senderID, String animName) {
+    try {
+        String msg = "anim," + senderID + "," + animName;
+        forwardPacketToAll(msg, senderID); 
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
+
 }

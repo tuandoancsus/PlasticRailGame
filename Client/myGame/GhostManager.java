@@ -9,6 +9,7 @@ import java.util.Vector;
 import org.joml.*;
 
 import tage.*;
+import tage.shapes.AnimatedShape;
 
 public class GhostManager
 {
@@ -22,7 +23,8 @@ public class GhostManager
 	
 	public void createGhostAvatar(UUID id, Vector3f position) throws IOException
 	{	System.out.println("adding ghost with ID --> " + id);
-		ObjShape s = game.getGhostShape();
+		//ObjShape s = game.getGhostShape();
+		AnimatedShape s = game.getAnimatedShape();
 		TextureImage t = game.getGhostTexture();
 		GhostAvatar newAvatar = new GhostAvatar(id, s, t, position);
 		initialScale = (new Matrix4f()).scaling(0.70f);
@@ -74,4 +76,15 @@ public class GhostManager
 		{	System.out.println("tried to update ghost avatar rotation, but unable to find ghost in list");
 		}
 	}
+
+	public void playAnimationOnGhost(UUID id, String animName) {
+		GhostAvatar ghost = findAvatar(id); 
+		if (ghost != null) {
+			ghost.playAnimation(animName, 10f, AnimatedShape.EndType.STOP, 0);
+		} else {
+			System.out.println("Ghost not found for animation: " + id);
+		}
+	}
+
+
 }

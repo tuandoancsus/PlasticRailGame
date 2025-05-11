@@ -32,7 +32,7 @@ public class JumpAction extends AbstractInputAction
 				new java.util.TimerTask() {
 					@Override
 					public void run() {
-						game.getAvatarShape().playAnimation("IDLE", 0.1f, AnimatedShape.EndType.LOOP, 0);
+						//game.getAvatarShape().playAnimation("IDLE", 0.1f, AnimatedShape.EndType.LOOP, 0);
 						isJumping = false;
 					}
 				},

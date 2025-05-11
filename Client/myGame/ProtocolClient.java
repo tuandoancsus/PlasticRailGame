@@ -31,7 +31,11 @@ public class ProtocolClient extends GameConnectionClient
 	
 	@Override
 	protected void processPacket(Object message)
-	{	String strMessage = (String)message;
+	{	if (message == null) {
+        System.err.println("Received null message!");
+        return;
+    }
+		String strMessage = (String)message;
 		System.out.println("message received -->" + strMessage);
 		String[] messageTokens = strMessage.split(",");
 		
@@ -172,15 +176,22 @@ public class ProtocolClient extends GameConnectionClient
             }
 
 			if (messageTokens[0].compareTo("gameState") == 0) {
-                if (game.getGameOver()) {
-					System.out.println("game over");
-					game.endGame();
-				}
-            }
+				System.out.println("game over");
+				game.setGameOver(true);      
+				game.endGame();              
+			}
 
 			if (messageTokens[0].compareTo("gameStart") == 0) {
 				System.out.println("game start");
             }
+
+			if (messageTokens[0].equals("anim")) {
+			UUID ghostID = UUID.fromString(messageTokens[1]);
+			String animName = messageTokens[2];
+
+			ghostManager.playAnimationOnGhost(ghostID, animName);
+		}
+
 	}	
 }
 	
@@ -343,4 +354,13 @@ public class ProtocolClient extends GameConnectionClient
 	public GhostNPC getGhostNPC() {
 		return ghostNPC;
 	}
+
+	public void sendAvatarAnimation(String animName) {
+    try {
+        String message = "anim," + id.toString() + "," + animName;
+        sendPacket(message);
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
 }

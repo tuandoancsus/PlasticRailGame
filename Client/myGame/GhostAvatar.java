@@ -3,6 +3,8 @@ package myGame;
 import java.util.UUID;
 
 import tage.*;
+import tage.shapes.AnimatedShape;
+
 import org.joml.*;
 
 // A ghost MUST be connected as a child of the root,
@@ -14,6 +16,7 @@ import org.joml.*;
 public class GhostAvatar extends GameObject
 {
 	UUID uuid;
+	AnimatedShape s;
 
 	public GhostAvatar(UUID id, ObjShape s, TextureImage t, Vector3f p) 
 	{	super(GameObject.root(), s, t);
@@ -26,4 +29,10 @@ public class GhostAvatar extends GameObject
 	public Vector3f getPosition() { return getWorldLocation(); }
 	public void setRotation(Matrix4f m) { setLocalRotation(m); }
 	public Matrix4f getRotation() { return getWorldRotation(); }
+	public AnimatedShape getAnimatedShape() { return s; }
+
+	public void playAnimation(String animName, float speed, AnimatedShape.EndType endType, int repeatCount) {
+    ((AnimatedShape) getShape()).playAnimation(animName, speed, endType, repeatCount);
+}
+
 }
